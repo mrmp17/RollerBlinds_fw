@@ -13,6 +13,10 @@
 #include <stdbool.h>
 #include "stm32l0xx_hal.h"
 #include "gpio.h"
+#include "adc.h"
+#include "tim.h"
+
+
 
 //############ LOW LEVEL GPIO MANIPULATION FUNCTIONS ##########
 //output functions
@@ -21,7 +25,7 @@ void hw_blueLed(bool state);
 void hw_espPower(bool state);
 void hw_tmcPower(bool state);
 void hw_auxGpio(bool state);
-void hw_tmcDir(bool state);
+void hw_tmcDir(bool state); //dont use this to change direction. use tmc_dir()
 void hw_tmcIoSply(bool state);
 void hw_tmcEnable(bool state);
 void hw_bal1(bool state);
@@ -34,8 +38,33 @@ bool hw_sw2();
 bool hw_sw3();
 bool hw_tmcGetDiag();
 bool hw_tmcGetIndex();
+bool hw_vbusPresent();
 //###########################################################
 
+//############ ADC FUNCTIONS ##########
+#define ADC_NUM_CH 2
+#define ADC_IDX_CELL1 1
+#define ADC_IDX_CELL2 0
+#define ADC_REF 3300
+#define ADC_MAX_VAL 4095
+#define ADC_CELL1_COEF 1.268046 //raw reading to mV: 1/0.635514 divider coef * ADC_REF * 1/4095
+#define ADC_CELL2_COEF 2.210951 //raw reading to mV: 1/0.364486 divider coef * ADC_REF * 1/4095
+
+void hw_adcStart();
+void hw_adcStop();
+uint32_t hw_getCell1Voltage();
+uint32_t hw_getCell2Voltage();
+uint32_t hw_getPackVoltage();
+//#####################################
+
+//############ STEPPER POSITIONING FUNCTIONS ##########
+#define STP_MIN_RELOAD 40 //minimal timer reload value (max speed / pulse per second)
+#define STP_MAX_RELAOD 32000 //max timer reload value (min speed / pps)
+
+void tmc_direction(bool dir);
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim);
 
 
+
+uint32_t dump(uint32_t val);
 #endif //ROLLERBLINDS_FW_HW_H

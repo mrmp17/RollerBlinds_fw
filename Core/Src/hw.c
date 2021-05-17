@@ -92,3 +92,64 @@ bool hw_tmcGetIndex(){
     if(HAL_GPIO_ReadPin(TMC_INDEX_GPIO_Port, TMC_INDEX_Pin)==GPIO_PIN_SET) return true;
     else return false;
 }
+
+//get status of vbus voltage. true if usb vbus present. (this could be connected to ADC in the future)
+bool hw_vbusPresent(){
+    if(HAL_GPIO_ReadPin(VBUS_PRESENT_GPIO_Port, VBUS_PRESENT_Pin)==GPIO_PIN_SET) return true;
+    else return false;
+}
+
+
+
+
+uint32_t adcBuffer[ADC_NUM_CH] = {0};
+void hw_adcStart(){
+    HAL_ADCEx_Calibration_Start(&hadc, ADC_SINGLE_ENDED);
+    HAL_ADC_Start_DMA(&hadc, adcBuffer, ADC_NUM_CH);
+}
+
+void hw_adcStop(){
+    HAL_ADC_Stop_DMA(&hadc);
+}
+
+//returns cell 1 voltage in mV
+uint32_t hw_getCell1Voltage(){
+    //return adcBuffer[ADC_IDX_CELL1];
+    return adcBuffer[ADC_IDX_CELL1]*ADC_CELL1_COEF;
+}
+
+//returns cell 2 voltage in mV
+uint32_t hw_getCell2Voltage(){
+    hw_getPackVoltage()-hw_getCell1Voltage();
+
+}
+
+//returns pack (cell1 in series with cell2) voltage in mV
+uint32_t hw_getPackVoltage(){
+    return adcBuffer[ADC_IDX_CELL2]*ADC_CELL2_COEF;
+}
+
+//global variables for absolute step counter and stepper direction
+int32_t g_steps_abs = 0;
+bool g_tmc_direction = false;
+
+//set tmc direction
+void tmc_direction(bool dir){
+    hw_tmcDir(dir);
+    g_tmc_direction = dir;
+}
+
+//timer pwm pulse finished callback. is called at counter compare event when couter=pulse value (rising edge)
+//we use this to count step commands to tmc stepper driver for positional control
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim){
+    if(htim == &htim2){ //this is our pwm timer
+        g_tmc_direction?g_steps_abs++:g_steps_abs--; //increment absolute step counter if direction is true, decrement if false
+    }
+}
+
+
+
+
+uint32_t dump(uint32_t val){
+    return 0;
+}
