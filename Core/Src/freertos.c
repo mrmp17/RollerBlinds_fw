@@ -49,7 +49,11 @@
 
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
-osThreadId uiTaskHandle;
+uint32_t defaultTaskBuffer[ 64 ];
+osStaticThreadDef_t defaultTaskControlBlock;
+osThreadId tmc_taskHandle;
+uint32_t uiTaskBuffer[ 64 ];
+osStaticThreadDef_t uiTaskControlBlock;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -57,7 +61,7 @@ osThreadId uiTaskHandle;
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void const * argument);
-void uistart(void const * argument);
+void tmc_task_entry(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -105,12 +109,12 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 64);
+  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 64, defaultTaskBuffer, &defaultTaskControlBlock);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
-  /* definition and creation of uiTask */
-  osThreadDef(uiTask, uistart, osPriorityNormal, 0, 64);
-  uiTaskHandle = osThreadCreate(osThread(uiTask), NULL);
+  /* definition and creation of tmc_task */
+  osThreadStaticDef(tmc_task, tmc_task_entry, osPriorityHigh, 0, 64, uiTaskBuffer, &uiTaskControlBlock);
+  tmc_taskHandle = osThreadCreate(osThread(tmc_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -136,22 +140,22 @@ void StartDefaultTask(void const * argument)
   /* USER CODE END StartDefaultTask */
 }
 
-/* USER CODE BEGIN Header_uistart */
+/* USER CODE BEGIN Header_tmc_task_entry */
 /**
-* @brief Function implementing the uiTask thread.
+* @brief Function implementing the tmc_task thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_uistart */
-void uistart(void const * argument)
+/* USER CODE END Header_tmc_task_entry */
+void tmc_task_entry(void const * argument)
 {
-  /* USER CODE BEGIN uistart */
+  /* USER CODE BEGIN tmc_task_entry */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END uistart */
+  /* USER CODE END tmc_task_entry */
 }
 
 /* Private application code --------------------------------------------------*/

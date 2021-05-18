@@ -49,7 +49,7 @@
 
 /* USER CODE BEGIN PV */
 extern int32_t g_steps_abs;
-extern  g_stp_direction;
+extern  bool g_stp_direction;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -112,8 +112,8 @@ int main(void)
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-    __HAL_TIM_SET_AUTORELOAD(&htim2, 200);
-    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 20);
+    //__HAL_TIM_SET_AUTORELOAD(&htim2, 200);
+    //__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 20);
     hw_blueLed(true);
     HAL_Delay(500);
 
@@ -129,7 +129,8 @@ int main(void)
     HAL_Delay(500);
     hw_blueLed(false);
     hw_adcStart();
-    //HAL_TIM_PWM_Start_IT(&htim2, TIM_CHANNEL_1);
+
+    tmc_setVel(10000);
   while (1){
 
       int32_t n = g_steps_abs;
@@ -139,15 +140,15 @@ int main(void)
 
 
       if(hw_sw1()){
-          HAL_TIM_PWM_Start_IT(&htim2, TIM_CHANNEL_1);
-          stp_direction(true);
+          tmc_startStepGen();
+          tmc_direction(true);
       }
       else if(hw_sw3()){
-          HAL_TIM_PWM_Start_IT(&htim2, TIM_CHANNEL_1);
-          stp_direction(false);
+          tmc_startStepGen();
+          tmc_direction(false);
       }
       else{
-          HAL_TIM_PWM_Stop_IT(&htim2, TIM_CHANNEL_1);
+          tmc_stopStepGen();
       }
 
       //HAL_Delay(10000);

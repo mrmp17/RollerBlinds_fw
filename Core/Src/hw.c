@@ -147,6 +147,41 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim){
     }
 }
 
+//starts generating step pulses for tmc. Set correct speed & direction before calling this!
+void tmc_startStepGen(){
+    HAL_TIM_PWM_Start_IT(&htim2, TIM_CHANNEL_1);
+}
+
+//stops generating step pulses for tmc.
+void tmc_stopStepGen(){
+    HAL_TIM_PWM_Stop_IT(&htim2, TIM_CHANNEL_1);
+}
+
+//sets step pulse frequency for correct steps per second - stepper motor velocity
+//returns true if parameter in range (set to nearest possible freq)
+//this is microstepping, not full steps!
+bool tmc_setVel(uint32_t stpPerSec){
+    // stpPerSec is equal to timer frequency at current reload and pulse value
+    // timer freq equal to clk/(reload+1)
+    // we want reload = (clk/freq) -1, freq=stpPerSec
+    //integer division should be ok here
+    uint32_t rld = (STP_TIMER_CLK/stpPerSec) -1;
+    bool ret = true;
+
+    //todo: input param = 0 obnašanje??
+    //cap reload value to valid limits. These are hard timer limits not allowable motor speed!
+    if(rld > STP_TIM_MAX_RELOAD){
+        rld = STP_TIM_MAX_RELOAD;
+        ret = false;
+    }
+    else if(rld < STP_TIM_MIN_RELOAD){
+        rld = STP_TIM_MIN_RELOAD;
+        ret = false;
+    }
+    __HAL_TIM_SET_AUTORELOAD(&htim2, rld);
+    return ret;
+}
+
 
 
 

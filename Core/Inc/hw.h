@@ -58,11 +58,20 @@ uint32_t hw_getPackVoltage();
 //#####################################
 
 //############ STEPPER POSITIONING FUNCTIONS ##########
-#define STP_MIN_RELOAD 40 //minimal timer reload value (max speed / pulse per second)
-#define STP_MAX_RELAOD 32000 //max timer reload value (min speed / pps)
-
+//reload is timer value at which timer resets to 0
+#define STP_TIM_MIN_RELOAD 40 //minimal timer reload value (max speed / pulse per second)
+#define STP_TIM_MAX_RELOAD 65000 //max timer reload value (min speed / pps)
+#define STP_TIM_PULSE 20
+#define STP_TIMER_CLK 2000000L
+#define TMC_MAX_VEL 10000
+#define TMC_CRUISE_VEL 8000
 void tmc_direction(bool dir);
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim);
+void tmc_startStepGen();
+void tmc_stopStepGen();
+bool tmc_setVel(uint32_t stpPerSec);
+bool tmc_commandVelocity(uint32_t stpPerSec);
+bool tmc_commandPosition(int32_t position);
 
 
 
