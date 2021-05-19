@@ -129,8 +129,8 @@ uint32_t hw_getPackVoltage(){
     return adcBuffer[ADC_IDX_CELL2]*ADC_CELL2_COEF;
 }
 
-//global variables for absolute step counter and stepper direction
-int32_t g_steps_abs = 0;
+
+int32_t g_steps_abs = 0; //global variables for absolute step counter and stepper direction
 bool g_tmc_direction = false;
 
 //set tmc direction
@@ -189,6 +189,17 @@ bool tmc_commandVelocity(int32_t stpPerSec){
     if(stpPerSec > TMC_MAX_VEL) return false;
     g_vel_cmd = stpPerSec; //write comanded velocity to global variable
     return true;
+}
+
+int32_t g_pos_cmd = 0; //global position command variable
+bool g_pos_ctrl_active = false; //global positional controll active flag
+//sets commanded motor position (in relation to absolute step counter). returns false if this is not possible
+//also sets g_pos_ctrl_active flag. flag resets when comanded position is reached
+bool tmc_commandPosition(int32_t position){
+    g_pos_cmd = position;
+    g_pos_ctrl_active = true;
+    return true;
+    //todo: validity checking
 }
 
 

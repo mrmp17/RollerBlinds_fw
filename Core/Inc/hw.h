@@ -16,6 +16,7 @@
 #include "gpio.h"
 #include "adc.h"
 #include "tim.h"
+#include <stdlib.h>
 
 
 
@@ -64,9 +65,10 @@ uint32_t hw_getPackVoltage();
 #define STP_TIM_MAX_RELOAD 65000 //max timer reload value (min speed / pps)
 #define STP_TIM_PULSE 20
 #define STP_TIMER_CLK 2000000L
-#define TMC_MAX_VEL 10000
-#define TMC_CRUISE_VEL 8000
+#define TMC_MAX_VEL 5000
+#define TMC_CRUISE_VEL 4000
 #define TMC_VEL_CHNG_PER_MS 10 //velocity can change 100 stpPerSec every millisecond
+#define TMC_POS_CTRL_RAMP_DOWN_LEN 1000 //speed ramping region in steps for positional controll
 void tmc_direction(bool dir);
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim);
 void tmc_startStepGen();

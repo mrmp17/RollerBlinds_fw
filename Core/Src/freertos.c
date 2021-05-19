@@ -49,6 +49,11 @@
 extern int32_t g_vel_act; //actual motor velocity global variable from hw.c file
 extern int32_t g_vel_cmd; //global velocity command variable from hw.c file
 
+extern int32_t g_steps_abs; //global variables for absolute step counter and stepper direction from hw.c file
+
+extern int32_t g_pos_cmd; //global position command variable from hw.c file
+extern bool g_pos_ctrl_active; //global positional controll active flag from hw.c file
+
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
 uint32_t defaultTaskBuffer[ 96 ];
@@ -138,20 +143,35 @@ void StartDefaultTask(void const * argument)
 
   for(;;)
   {
+
+
       if(hw_sw1()){
           //tmc_startStepGen();
-          tmc_commandVelocity(5000);
+          //tmc_commandVelocity(5000);
           //tmc_direction(true);
+          hw_tmcEnable(true);
+          tmc_startStepGen();
+          tmc_commandPosition(100000);
+          osDelay(100000);
+          tmc_stopStepGen();
+          hw_tmcEnable(false);
       }
       else if(hw_sw3()){
           //tmc_startStepGen();
-          tmc_commandVelocity(-5000);
+          //tmc_commandVelocity(-5000);
           //tmc_direction(false);
+          hw_tmcEnable(true);
+          tmc_startStepGen();
+          tmc_commandPosition(-100000);
+          osDelay(100000);
+          tmc_stopStepGen();
+          hw_tmcEnable(false);
       }
       else{
           //tmc_stopStepGen();
-          tmc_commandVelocity(0);
+          //tmc_commandVelocity(0);
       }
+
   }
   /* USER CODE END StartDefaultTask */
 }
@@ -170,9 +190,26 @@ void tmc_task_entry(void const * argument)
   //while(1);
   for(;;)
   {
+      //positional controll. sets desired velocity
+      //no need to ramp speed up, is handeled by velocity ctrl. only need to slow down to reach the exact destination
 
+      if(g_pos_ctrl_active){ //positional controll active / position not yet reached
+          int32_t diff = g_pos_cmd - g_steps_abs;
+          if(diff < 10){
+              g_pos_ctrl_active = false;
+          }
+          if(abs(diff) < TMC_POS_CTRL_RAMP_DOWN_LEN){ //near destinatio
+              tmc_commandVelocity(diff/TMC_POS_CTRL_RAMP_DOWN_LEN);
+          }
+          else if(diff > 0){ //cruising speed, positive direction
+              tmc_commandVelocity(TMC_CRUISE_VEL);
+          }
+          else{ //cruising speed, negative direction
+              tmc_commandVelocity(-TMC_CRUISE_VEL);
+          }
+      }
 
-
+      //velocity controll
       int32_t sps_rel;
       if(g_vel_cmd < g_vel_act){
           if(g_vel_act - g_vel_cmd <= TMC_VEL_CHNG_PER_MS*20){ //we can directly jump to commanded speed

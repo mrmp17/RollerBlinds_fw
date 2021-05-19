@@ -112,7 +112,7 @@ int main(void)
   HAL_Delay(500);
 
 
-  hw_tmcEnable(true);
+  //hw_tmcEnable(true);
   hw_blueLed(true);
   HAL_Delay(500);
   hw_blueLed(false);
