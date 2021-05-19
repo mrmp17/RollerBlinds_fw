@@ -65,7 +65,7 @@ uint32_t hw_getPackVoltage();
 #define STP_TIMER_CLK 2000000L
 #define TMC_MAX_VEL 10000
 #define TMC_CRUISE_VEL 8000
-#define TMC_VEL_CHNG_PER_MS 100 //velocity can change 100 stpPerSec every millisecond
+#define TMC_VEL_CHNG_PER_MS 10 //velocity can change 100 stpPerSec every millisecond
 void tmc_direction(bool dir);
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim);
 void tmc_startStepGen();

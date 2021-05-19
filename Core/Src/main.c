@@ -102,35 +102,38 @@ int main(void)
   hw_tmcEnable(false);
   HAL_GPIO_WritePin(TMC_UART_GPIO_Port, TMC_UART_Pin, GPIO_PIN_SET);
 
+  hw_blueLed(true);
+  HAL_Delay(500);
+
+  hw_tmcPower(true);
+  hw_tmcIoSply(true);
+  hw_redLed(true);
+  hw_blueLed(false);
+  HAL_Delay(500);
+
+
+  hw_tmcEnable(true);
+  hw_blueLed(true);
+  HAL_Delay(500);
+  hw_blueLed(false);
+  hw_adcStart();
+
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in freertos.c) */
-  //MX_FREERTOS_Init();
+  MX_FREERTOS_Init();
   /* Start scheduler */
-  //osKernelStart();
+  osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
     //__HAL_TIM_SET_AUTORELOAD(&htim2, 200);
     //__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 20);
-    hw_blueLed(true);
-    HAL_Delay(500);
-
-    hw_tmcPower(true);
-    hw_tmcIoSply(true);
-    hw_redLed(true);
-    hw_blueLed(false);
-    HAL_Delay(500);
 
 
-    hw_tmcEnable(true);
-    hw_blueLed(true);
-    HAL_Delay(500);
-    hw_blueLed(false);
-    hw_adcStart();
+    //tmc_setVel(10000);
 
-    tmc_setVel(10000);
   while (1){
 
       int32_t n = g_steps_abs;
@@ -141,18 +144,21 @@ int main(void)
 
       if(hw_sw1()){
           tmc_startStepGen();
+          tmc_commandVelocity(10000);
           tmc_direction(true);
       }
       else if(hw_sw3()){
           tmc_startStepGen();
+          tmc_commandVelocity(10000);
           tmc_direction(false);
       }
       else{
-          tmc_stopStepGen();
+          //tmc_stopStepGen();
+          tmc_commandVelocity(10000);
       }
 
       //HAL_Delay(10000);
-      HAL_TIM_PWM_Stop_IT(&htim2, TIM_CHANNEL_1);
+      //HAL_TIM_PWM_Stop_IT(&htim2, TIM_CHANNEL_1);
 
 
       
