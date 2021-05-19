@@ -117,6 +117,7 @@ int main(void)
   HAL_Delay(500);
   hw_blueLed(false);
   hw_adcStart();
+  tmc_startStepGen();
 
   /* USER CODE END 2 */
 
@@ -132,7 +133,7 @@ int main(void)
     //__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 20);
 
 
-    //tmc_setVel(10000);
+    //tmc_setSpS(10000);
 
   while (1){
 

@@ -157,11 +157,11 @@ void tmc_stopStepGen(){
     HAL_TIM_PWM_Stop_IT(&htim2, TIM_CHANNEL_1);
 }
 
-uint32_t g_vel_act = 0; //actual motor velocity global variable
+int32_t g_vel_act = 0; //actual motor velocity global variable
 //sets step pulse frequency for correct steps per second - stepper motor velocity
 //returns true if parameter in range (set to nearest possible freq)
 //this is microstepping, not full steps!
-bool tmc_setVel(uint32_t stpPerSec){
+bool tmc_setSpS(uint32_t stpPerSec){
     // stpPerSec is equal to timer frequency at current reload and pulse value
     // timer freq equal to clk/(reload+1)
     // we want reload = (clk/freq) -1, freq=stpPerSec
@@ -179,15 +179,13 @@ bool tmc_setVel(uint32_t stpPerSec){
         rld = STP_TIM_MIN_RELOAD;
         ret = false;
     }
-    //g_vel_act = STP_TIMER_CLK/(rld+1);
-    g_vel_act = stpPerSec;
     __HAL_TIM_SET_AUTORELOAD(&htim2, rld);
     return ret;
 }
 
-uint32_t g_vel_cmd = 0; //global velocity command variable
+int32_t g_vel_cmd = 0; //global velocity command variable
 //sets desired motor velocity in steps per second. Actual motor velocity can be different due to ramping (handeled in rtos task)
-bool tmc_commandVelocity(uint32_t stpPerSec){
+bool tmc_commandVelocity(int32_t stpPerSec){
     if(stpPerSec > TMC_MAX_VEL) return false;
     g_vel_cmd = stpPerSec; //write comanded velocity to global variable
     return true;

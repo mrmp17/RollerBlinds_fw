@@ -6,6 +6,7 @@
 
 // "tmc" is short for TMC2208 stepper motor dirver
 // "esp" is short for ESP8266 wifi modem
+// "SpS" is short for stepper steps per second speed
 
 #ifndef ROLLERBLINDS_FW_HW_H
 #define ROLLERBLINDS_FW_HW_H
@@ -70,8 +71,8 @@ void tmc_direction(bool dir);
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim);
 void tmc_startStepGen();
 void tmc_stopStepGen();
-bool tmc_setVel(uint32_t stpPerSec);
-bool tmc_commandVelocity(uint32_t stpPerSec);
+bool tmc_setSpS(uint32_t stpPerSec);
+bool tmc_commandVelocity(int32_t stpPerSec);
 bool tmc_commandPosition(int32_t position);
 
 

@@ -46,8 +46,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-extern uint32_t g_vel_act; //actual motor velocity global variable from hw.c file
-extern uint32_t g_vel_cmd; //global velocity command variable from hw.c file
+extern int32_t g_vel_act; //actual motor velocity global variable from hw.c file
+extern int32_t g_vel_cmd; //global velocity command variable from hw.c file
 
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
@@ -135,19 +135,18 @@ void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
   /* Infinite loop */
+
   for(;;)
   {
-
-
       if(hw_sw1()){
-          tmc_startStepGen();
-          tmc_commandVelocity(1600);
-          tmc_direction(true);
+          //tmc_startStepGen();
+          tmc_commandVelocity(5000);
+          //tmc_direction(true);
       }
       else if(hw_sw3()){
-          tmc_startStepGen();
-          tmc_commandVelocity(1600);
-          tmc_direction(false);
+          //tmc_startStepGen();
+          tmc_commandVelocity(-5000);
+          //tmc_direction(false);
       }
       else{
           //tmc_stopStepGen();
@@ -168,28 +167,68 @@ void tmc_task_entry(void const * argument)
 {
   /* USER CODE BEGIN tmc_task_entry */
   /* Infinite loop */
+  //while(1);
   for(;;)
   {
-      static uint32_t timing = 0;
 
+
+
+      int32_t sps_rel;
       if(g_vel_cmd < g_vel_act){
-          if(g_vel_act - g_vel_cmd <= TMC_VEL_CHNG_PER_MS*10){ //we can directly jump to commanded speed
-              tmc_setVel(g_vel_cmd);
+          if(g_vel_act - g_vel_cmd <= TMC_VEL_CHNG_PER_MS*20){ //we can directly jump to commanded speed
+              sps_rel = g_vel_cmd;
+              g_vel_act = sps_rel;
+              if(sps_rel >= 0){
+                  tmc_setSpS(sps_rel);
+                  tmc_direction(true);
+              }
+              else{
+                  tmc_setSpS(-sps_rel);
+                  tmc_direction(false);
+              }
+
           }
           else{ //decrease speed max allowable amount
-              tmc_setVel(g_vel_act - TMC_VEL_CHNG_PER_MS*10);
+              sps_rel = g_vel_act - TMC_VEL_CHNG_PER_MS * 20;
+              g_vel_act = sps_rel;
+              if(sps_rel >= 0){
+                  tmc_setSpS(sps_rel);
+                  tmc_direction(true);
+              }
+              else{
+                  tmc_setSpS(-sps_rel);
+                  tmc_direction(false);
+              }
           }
       }
       else if(g_vel_cmd > g_vel_act){
-          if(g_vel_cmd - g_vel_act <= TMC_VEL_CHNG_PER_MS*10){ //we can directly jump to commanded speed
-              tmc_setVel(g_vel_cmd);
+          if(g_vel_cmd - g_vel_act <= TMC_VEL_CHNG_PER_MS*20){ //we can directly jump to commanded speed
+              sps_rel = g_vel_cmd;
+              g_vel_act = sps_rel;
+              if(sps_rel >= 0){
+                  tmc_setSpS(sps_rel);
+                  tmc_direction(true);
+              }
+              else{
+                  tmc_setSpS(-sps_rel);
+                  tmc_direction(false);
+              }
           }
           else{ //increase speed max allowable amount
-              tmc_setVel(g_vel_act + TMC_VEL_CHNG_PER_MS*10);
+              sps_rel = g_vel_act + TMC_VEL_CHNG_PER_MS * 20;
+              g_vel_act = sps_rel;
+              if(sps_rel >= 0){
+                  tmc_setSpS(sps_rel);
+                  tmc_direction(true);
+              }
+              else{
+                  tmc_setSpS(-sps_rel);
+                  tmc_direction(false);
+              }
           }
       }
       //else: nothing to do, speed is already mached
-      osDelay(10);
+      osDelay(20);
   }
   /* USER CODE END tmc_task_entry */
 }
