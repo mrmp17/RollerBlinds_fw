@@ -149,27 +149,39 @@ void StartDefaultTask(void const * argument)
           //tmc_startStepGen();
           //tmc_commandVelocity(5000);
           //tmc_direction(true);
-          hw_tmcEnable(true);
-          tmc_startStepGen();
-          tmc_commandPosition(100000);
-          osDelay(100000);
-          tmc_stopStepGen();
-          hw_tmcEnable(false);
+
+          //hw_tmcEnable(true);
+          //tmc_startStepGen();
+
+          //tmc_commandPosition(g_steps_abs+205000);
+
+          //tmc_commandPosition(g_steps_abs+10000);
+          //while(tmc_posCtrlActive());
+          tmc_commandVelocity(-4000);
+
+          //tmc_stopStepGen();
+          //hw_tmcEnable(false);
+      }
+      else if(hw_sw2()){
+          tmc_commandVelocity(4000);
       }
       else if(hw_sw3()){
           //tmc_startStepGen();
           //tmc_commandVelocity(-5000);
           //tmc_direction(false);
-          hw_tmcEnable(true);
-          tmc_startStepGen();
-          tmc_commandPosition(-100000);
-          osDelay(100000);
-          tmc_stopStepGen();
-          hw_tmcEnable(false);
+
+          //hw_tmcEnable(true);
+          //tmc_startStepGen();
+
+          //tmc_commandPosition(g_steps_abs-205000);
+          tmc_commandPosition(g_steps_abs-10000);
+          while(tmc_posCtrlActive());
+          //tmc_stopStepGen();
+          //hw_tmcEnable(false);
       }
       else{
           //tmc_stopStepGen();
-          //tmc_commandVelocity(0);
+          tmc_commandVelocity(0);
       }
 
   }
@@ -195,11 +207,15 @@ void tmc_task_entry(void const * argument)
 
       if(g_pos_ctrl_active){ //positional controll active / position not yet reached
           int32_t diff = g_pos_cmd - g_steps_abs;
-          if(diff < 10){
-              g_pos_ctrl_active = false;
-          }
+//          else if((g_pos_cmd >= 0 && g_steps_abs > g_pos_cmd) || (g_pos_cmd < 0 && g_steps_abs < g_pos_cmd)){
+//              //we have overshot destination in this case. whoops.
+//              g_pos_ctrl_active = false;
+//          }
           if(abs(diff) < TMC_POS_CTRL_RAMP_DOWN_LEN){ //near destinatio
-              tmc_commandVelocity(diff/TMC_POS_CTRL_RAMP_DOWN_LEN);
+              int32_t reqVel = (TMC_CRUISE_VEL*diff)/TMC_POS_CTRL_RAMP_DOWN_LEN; //required velocity. this should be capped at TMC_MIN_VEL (min velocity at which destination is reached)
+              if(reqVel >= 0 && reqVel <= TMC_MIN_VEL) reqVel = TMC_MIN_VEL;
+              else if(reqVel < 0 && reqVel >= -TMC_MIN_VEL) reqVel = -TMC_MIN_VEL;
+              tmc_commandVelocity(reqVel);
           }
           else if(diff > 0){ //cruising speed, positive direction
               tmc_commandVelocity(TMC_CRUISE_VEL);
@@ -207,63 +223,76 @@ void tmc_task_entry(void const * argument)
           else{ //cruising speed, negative direction
               tmc_commandVelocity(-TMC_CRUISE_VEL);
           }
+          if(abs(diff) <= 5){ //5 steps to destination is close enough
+              g_pos_ctrl_active = false;
+              tmc_commandVelocity(0);
+          }
       }
 
       //velocity controll
       int32_t sps_rel;
-      if(g_vel_cmd < g_vel_act){
-          if(g_vel_act - g_vel_cmd <= TMC_VEL_CHNG_PER_MS*20){ //we can directly jump to commanded speed
-              sps_rel = g_vel_cmd;
-              g_vel_act = sps_rel;
-              if(sps_rel >= 0){
-                  tmc_setSpS(sps_rel);
-                  tmc_direction(true);
-              }
-              else{
-                  tmc_setSpS(-sps_rel);
-                  tmc_direction(false);
-              }
+      if(g_vel_cmd != 0 || g_vel_act != 0){ //commanded and actual velocity not zero, tmc should be ON
+          tmc_startStepGen();
+          hw_tmcEnable(true);
+          if(g_vel_cmd < g_vel_act){
+              if(g_vel_act - g_vel_cmd <= TMC_VEL_CHNG_PER_MS*20){ //we can directly jump to commanded speed
+                  sps_rel = g_vel_cmd;
+                  g_vel_act = sps_rel;
+                  if(sps_rel >= 0){
+                      tmc_setSpS(sps_rel);
+                      tmc_direction(true);
+                  }
+                  else{
+                      tmc_setSpS(-sps_rel);
+                      tmc_direction(false);
+                  }
 
-          }
-          else{ //decrease speed max allowable amount
-              sps_rel = g_vel_act - TMC_VEL_CHNG_PER_MS * 20;
-              g_vel_act = sps_rel;
-              if(sps_rel >= 0){
-                  tmc_setSpS(sps_rel);
-                  tmc_direction(true);
               }
-              else{
-                  tmc_setSpS(-sps_rel);
-                  tmc_direction(false);
+              else{ //decrease speed max allowable amount
+                  sps_rel = g_vel_act - TMC_VEL_CHNG_PER_MS * 20;
+                  g_vel_act = sps_rel;
+                  if(sps_rel >= 0){
+                      tmc_setSpS(sps_rel);
+                      tmc_direction(true);
+                  }
+                  else{
+                      tmc_setSpS(-sps_rel);
+                      tmc_direction(false);
+                  }
+              }
+          }
+          else if(g_vel_cmd > g_vel_act){
+              if(g_vel_cmd - g_vel_act <= TMC_VEL_CHNG_PER_MS*20){ //we can directly jump to commanded speed
+                  sps_rel = g_vel_cmd;
+                  g_vel_act = sps_rel;
+                  if(sps_rel >= 0){
+                      tmc_setSpS(sps_rel);
+                      tmc_direction(true);
+                  }
+                  else{
+                      tmc_setSpS(-sps_rel);
+                      tmc_direction(false);
+                  }
+              }
+              else{ //increase speed max allowable amount
+                  sps_rel = g_vel_act + TMC_VEL_CHNG_PER_MS * 20;
+                  g_vel_act = sps_rel;
+                  if(sps_rel >= 0){
+                      tmc_setSpS(sps_rel);
+                      tmc_direction(true);
+                  }
+                  else{
+                      tmc_setSpS(-sps_rel);
+                      tmc_direction(false);
+                  }
               }
           }
       }
-      else if(g_vel_cmd > g_vel_act){
-          if(g_vel_cmd - g_vel_act <= TMC_VEL_CHNG_PER_MS*20){ //we can directly jump to commanded speed
-              sps_rel = g_vel_cmd;
-              g_vel_act = sps_rel;
-              if(sps_rel >= 0){
-                  tmc_setSpS(sps_rel);
-                  tmc_direction(true);
-              }
-              else{
-                  tmc_setSpS(-sps_rel);
-                  tmc_direction(false);
-              }
-          }
-          else{ //increase speed max allowable amount
-              sps_rel = g_vel_act + TMC_VEL_CHNG_PER_MS * 20;
-              g_vel_act = sps_rel;
-              if(sps_rel >= 0){
-                  tmc_setSpS(sps_rel);
-                  tmc_direction(true);
-              }
-              else{
-                  tmc_setSpS(-sps_rel);
-                  tmc_direction(false);
-              }
-          }
+      else{ //commanded and actual velocity zero, tmc should be OFF
+          tmc_stopStepGen();
+          hw_tmcEnable(false);
       }
+
       //else: nothing to do, speed is already mached
       osDelay(20);
   }

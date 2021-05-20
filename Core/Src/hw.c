@@ -185,8 +185,10 @@ bool tmc_setSpS(uint32_t stpPerSec){
 
 int32_t g_vel_cmd = 0; //global velocity command variable
 //sets desired motor velocity in steps per second. Actual motor velocity can be different due to ramping (handeled in rtos task)
+//returns false if set speed too high
 bool tmc_commandVelocity(int32_t stpPerSec){
-    if(stpPerSec > TMC_MAX_VEL) return false;
+    if(abs(stpPerSec) > TMC_MAX_VEL) return false;
+
     g_vel_cmd = stpPerSec; //write comanded velocity to global variable
     return true;
 }
@@ -200,6 +202,11 @@ bool tmc_commandPosition(int32_t position){
     g_pos_ctrl_active = true;
     return true;
     //todo: validity checking
+}
+
+//returns true if positional control is active (velocity is controlled by pos ctrl)
+bool tmc_posCtrlActive(){
+    return g_pos_ctrl_active;
 }
 
 
