@@ -61,6 +61,9 @@ osStaticThreadDef_t defaultTaskControlBlock;
 osThreadId tmc_taskHandle;
 uint32_t uiTaskBuffer[ 96 ];
 osStaticThreadDef_t uiTaskControlBlock;
+osThreadId main_logic_taskHandle;
+uint32_t main_logic_taskBuffer[ 96 ];
+osStaticThreadDef_t main_logic_taskControlBlock;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -69,6 +72,7 @@ osStaticThreadDef_t uiTaskControlBlock;
 
 void StartDefaultTask(void const * argument);
 void tmc_task_entry(void const * argument);
+void main_logic_task_entry(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -122,6 +126,10 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of tmc_task */
   osThreadStaticDef(tmc_task, tmc_task_entry, osPriorityHigh, 0, 96, uiTaskBuffer, &uiTaskControlBlock);
   tmc_taskHandle = osThreadCreate(osThread(tmc_task), NULL);
+
+  /* definition and creation of main_logic_task */
+  osThreadStaticDef(main_logic_task, main_logic_task_entry, osPriorityNormal, 0, 96, main_logic_taskBuffer, &main_logic_taskControlBlock);
+  main_logic_taskHandle = osThreadCreate(osThread(main_logic_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -297,6 +305,24 @@ void tmc_task_entry(void const * argument)
       osDelay(20);
   }
   /* USER CODE END tmc_task_entry */
+}
+
+/* USER CODE BEGIN Header_main_logic_task_entry */
+/**
+* @brief Function implementing the main_logic_task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_main_logic_task_entry */
+void main_logic_task_entry(void const * argument)
+{
+  /* USER CODE BEGIN main_logic_task_entry */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END main_logic_task_entry */
 }
 
 /* Private application code --------------------------------------------------*/
