@@ -16,7 +16,10 @@
 #include "gpio.h"
 #include "adc.h"
 #include "tim.h"
+#include "rtc.h"
+#include "usart.h"
 #include <stdlib.h>
+
 
 
 
@@ -78,6 +81,28 @@ bool tmc_setSpS(uint32_t stpPerSec);
 bool tmc_commandVelocity(int32_t stpPerSec);
 bool tmc_commandPosition(int32_t position);
 bool tmc_posCtrlActive();
+//#########################################################
+
+
+// ########## SLEEP AND RTC FUNCTIONS ###################
+#define RTC_WAKE_TIME 5000
+#define RTC_TICKS_PER_S 2048
+void hw_sleep();
+void hw_configClockAfterSleep();
+void hw_setRtcTime(uint8_t h, uint8_t m, uint8_t s);
+void hw_setRtcDate(uint8_t date, uint8_t month, uint8_t year);
+uint8_t hw_getHour();
+uint8_t hw_getMinute();
+uint8_t hw_getSecond();
+uint8_t hw_getDay();
+uint8_t hw_getMonth();
+uint8_t hw_getYear();
+
+//#######################################################
+
+//################## DEBUG ##############################
+void dbg_debugPrint(uint8_t print [64]);
+//#######################################################
 
 
 

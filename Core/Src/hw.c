@@ -212,6 +212,172 @@ bool tmc_posCtrlActive(){
 
 
 
+void hw_configClockAfterSleep(){
+    //copied from main.c: clock config
+
+    RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+    RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+    RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
+
+    /** Configure the main internal regulator output voltage
+    */
+    __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+    /** Configure LSE Drive Capability
+    */
+    HAL_PWR_EnableBkUpAccess();
+    __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
+    /** Initializes the RCC Oscillators according to the specified parameters
+    * in the RCC_OscInitTypeDef structure.
+    */
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSE;
+    RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    /** Initializes the CPU, AHB and APB buses clocks
+    */
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                                  |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2|RCC_PERIPHCLK_RTC;
+    PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
+    PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
+    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+    {
+        Error_Handler();
+    }
+}
+
+
+void hw_sleep(){
+    HAL_SuspendTick(); //suspend systick. freertos should now be inactive (not switching tasks, time frozen)
+
+    hw_adcStop();
+    hw_espPower(false);
+    hw_tmcIoSply(false);
+    hw_tmcEnable(true); //pin level to low to save energy
+    hw_tmcDir(false);
+    hw_tmcPower(false);
+    hw_bal1(false);
+    hw_bal2(false);
+    hw_blueLed(false);
+    hw_redLed(false);
+
+    uint32_t sleepTime = ((uint32_t)RTC_WAKE_TIME*RTC_TICKS_PER_S)/1000;
+    HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, sleepTime, RTC_WAKEUPCLOCK_RTCCLK_DIV16);
+    HAL_PWREx_EnableUltraLowPower();
+    HAL_PWR_DisableSleepOnExit();
+    HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);
+
+    // !!!!!!!!!!!! SLEEPING !!!!!!!!!!!!!
+
+    hw_configClockAfterSleep();
+    HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
+
+    hw_adcStart();
+    //hw_espPower(false);
+    hw_tmcPower(true);
+    hw_tmcIoSply(true);
+
+    HAL_ResumeTick();
+
+
+
+
+}
+void hw_setRtcTime(uint8_t h, uint8_t m, uint8_t s){
+    RTC_TimeTypeDef sTime = {0};
+    sTime.Hours = h;
+    sTime.Minutes = m;
+    sTime.Seconds = s;
+    sTime.StoreOperation = RTC_STOREOPERATION_SET;
+    HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+    //todo: DayLightSaving ??
+    //todo: store operation value?
+
+}
+void hw_setRtcDate(uint8_t date, uint8_t month, uint8_t year){
+    RTC_DateTypeDef sDate = {0};
+    sDate.Date = date;
+    sDate.Month = month;
+    sDate.Year = year;
+    HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+    //todo: year format checking! 2021 -> 21
+    //todo: is weekday necesary?
+
+}
+uint8_t hw_getHour(){
+    //todo: check if HAL_RTC_GetTime returns OK
+    RTC_TimeTypeDef sTime;
+    HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+    return sTime.Hours;
+}
+uint8_t hw_getMinute(){
+    //todo: check if HAL_RTC_GetTime returns OK
+    RTC_TimeTypeDef sTime;
+    HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+    return sTime.Minutes;
+
+}
+uint8_t hw_getSecond(){
+    //todo: check if HAL_RTC_GetTime returns OK
+    RTC_TimeTypeDef sTime;
+    HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+    return sTime.Seconds;
+
+}
+uint8_t hw_getDay(){
+    //todo: check if HAL_RTC_GetDate returns OK
+    RTC_DateTypeDef sDate;
+    HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+    return sDate.Date;
+
+}
+uint8_t hw_getMonth(){
+    //todo: check if HAL_RTC_GetDate returns OK
+    RTC_DateTypeDef sDate;
+    HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+    return sDate.Month;
+
+}
+uint8_t hw_getYear(){
+    //todo: check if HAL_RTC_GetDate returns OK
+    RTC_DateTypeDef sDate;
+    HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+    return sDate.Year;
+
+}
+
+
+
+
+
+
+
+
+void dbg_debugPrint(uint8_t print[64]){
+    uint8_t n = 0;
+    while(print[n] != 0){
+        n++;
+    }
+    HAL_UART_Transmit(&huart2, print, n, 100);
+}
+
+
+
+
 uint32_t dump(uint32_t val){
     return 0;
 }

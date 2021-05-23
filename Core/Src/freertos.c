@@ -320,7 +320,28 @@ void main_logic_task_entry(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    osDelay(10000);
+
+    dbg_debugPrint("time\n");
+    uint8_t cajt[6] = {0};
+
+    cajt[0] = hw_getDay();
+    cajt[1] = hw_getMonth();
+    cajt[2] = hw_getYear();
+
+    cajt[3] = hw_getHour();
+    cajt[4] = hw_getMinute();
+    cajt[5] = hw_getSecond();
+
+    uint32_t strom = hw_getCell1Voltage();
+    dump(strom);
+    dump(cajt[1]);
+
+    dbg_debugPrint("slp\n");
+    osDelay(100);
+    hw_sleep();
+    hw_redLed(true);
+    dbg_debugPrint("wkp\n");
   }
   /* USER CODE END main_logic_task_entry */
 }

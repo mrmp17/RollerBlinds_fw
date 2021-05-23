@@ -22,9 +22,9 @@
 #include "cmsis_os.h"
 #include "adc.h"
 #include "dma.h"
-#include "usart.h"
 #include "rtc.h"
 #include "tim.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -95,7 +95,6 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_ADC_Init();
-  MX_LPUART1_UART_Init();
   MX_USART2_UART_Init();
   MX_TIM2_Init();
   MX_RTC_Init();
@@ -119,7 +118,11 @@ int main(void)
   HAL_Delay(500);
   hw_blueLed(false);
   hw_adcStart();
-  tmc_startStepGen();
+  //tmc_startStepGen();
+
+
+  hw_setRtcDate(13, 12, 22);
+  hw_setRtcTime(19, 19, 19);
 
   /* USER CODE END 2 */
 
@@ -216,10 +219,8 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2|RCC_PERIPHCLK_LPUART1
-                              |RCC_PERIPHCLK_RTC;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2|RCC_PERIPHCLK_RTC;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
-  PeriphClkInit.Lpuart1ClockSelection = RCC_LPUART1CLKSOURCE_PCLK1;
   PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
