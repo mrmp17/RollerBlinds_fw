@@ -160,18 +160,18 @@ void StartDefaultTask(void const * argument)
 
           //hw_tmcEnable(true);
           //tmc_startStepGen();
-
-          //tmc_commandPosition(g_steps_abs+205000);
-
+          hw_redLed(true);
+          tmc_commandPosition(g_steps_abs+205000);
+          while(tmc_posCtrlActive());
           //tmc_commandPosition(g_steps_abs+10000);
           //while(tmc_posCtrlActive());
-          tmc_commandVelocity(-4000);
+          //tmc_commandVelocity(-4000);
 
           //tmc_stopStepGen();
           //hw_tmcEnable(false);
       }
       else if(hw_sw2()){
-          tmc_commandVelocity(4000);
+          //tmc_commandVelocity(4000);
       }
       else if(hw_sw3()){
           //tmc_startStepGen();
@@ -182,7 +182,8 @@ void StartDefaultTask(void const * argument)
           //tmc_startStepGen();
 
           //tmc_commandPosition(g_steps_abs-205000);
-          tmc_commandPosition(g_steps_abs-10000);
+          hw_redLed(true);
+          tmc_commandPosition(g_steps_abs-205000);
           while(tmc_posCtrlActive());
           //tmc_stopStepGen();
           //hw_tmcEnable(false);
@@ -191,6 +192,7 @@ void StartDefaultTask(void const * argument)
           //tmc_stopStepGen();
           tmc_commandVelocity(0);
       }
+      hw_sleep();
 
   }
   /* USER CODE END StartDefaultTask */
@@ -322,26 +324,26 @@ void main_logic_task_entry(void const * argument)
   {
     osDelay(10000);
 
-    dbg_debugPrint("time\n");
-    uint8_t cajt[6] = {0};
-
-    cajt[0] = hw_getDay();
-    cajt[1] = hw_getMonth();
-    cajt[2] = hw_getYear();
-
-    cajt[3] = hw_getHour();
-    cajt[4] = hw_getMinute();
-    cajt[5] = hw_getSecond();
-
-    uint32_t strom = hw_getCell1Voltage();
-    dump(strom);
-    dump(cajt[1]);
-
-    dbg_debugPrint("slp\n");
-    osDelay(100);
-    hw_sleep();
-    hw_redLed(true);
-    dbg_debugPrint("wkp\n");
+//    dbg_debugPrint("time\n");
+//    uint8_t cajt[6] = {0};
+//
+//    cajt[0] = hw_getDay();
+//    cajt[1] = hw_getMonth();
+//    cajt[2] = hw_getYear();
+//
+//    cajt[3] = hw_getHour();
+//    cajt[4] = hw_getMinute();
+//    cajt[5] = hw_getSecond();
+//
+//    uint32_t strom = hw_getCell1Voltage();
+//    dump(strom);
+//    dump(cajt[1]);
+//
+//    dbg_debugPrint("slp\n");
+//    osDelay(100);
+//    //hw_sleep();
+//    hw_redLed(true);
+//    dbg_debugPrint("wkp\n");
   }
   /* USER CODE END main_logic_task_entry */
 }

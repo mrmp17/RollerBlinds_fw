@@ -19,6 +19,7 @@
 #include "rtc.h"
 #include "usart.h"
 #include <stdlib.h>
+#include "main.h"
 
 
 
@@ -97,6 +98,9 @@ uint8_t hw_getSecond();
 uint8_t hw_getDay();
 uint8_t hw_getMonth();
 uint8_t hw_getYear();
+bool hw_gpioConfigForSleep();
+bool hw_gpioConfigForAwake();
+
 
 //#######################################################
 

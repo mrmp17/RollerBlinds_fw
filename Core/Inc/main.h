@@ -32,6 +32,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+//added prototype to be able to call this from hw.c function
+void SystemClock_Config(void);
 
 /* USER CODE END Includes */
 
