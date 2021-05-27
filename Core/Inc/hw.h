@@ -56,6 +56,7 @@ bool hw_vbusPresent();
 #define ADC_CELL1_COEF 1.268046 //raw reading to mV: 1/0.635514 divider coef * ADC_REF * 1/4095
 #define ADC_CELL2_COEF 2.210951 //raw reading to mV: 1/0.364486 divider coef * ADC_REF * 1/4095
 
+
 void hw_adcStart();
 void hw_adcStop();
 uint32_t hw_getCell1Voltage();

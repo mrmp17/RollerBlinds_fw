@@ -103,6 +103,7 @@ bool hw_vbusPresent(){
 
 
 uint32_t adcBuffer[ADC_NUM_CH] = {0};
+bool g_charging_flag = false; //value set and reset by analog task
 void hw_adcStart(){
     HAL_ADCEx_Calibration_Start(&hadc, ADC_SINGLE_ENDED);
     HAL_ADC_Start_DMA(&hadc, adcBuffer, ADC_NUM_CH);
@@ -120,12 +121,13 @@ uint32_t hw_getCell1Voltage(){
 
 //returns cell 2 voltage in mV
 uint32_t hw_getCell2Voltage(){
-    hw_getPackVoltage()-hw_getCell1Voltage();
+    return hw_getPackVoltage()-hw_getCell1Voltage();
 
 }
 
 //returns pack (cell1 in series with cell2) voltage in mV
 uint32_t hw_getPackVoltage(){
+    //return adcBuffer[ADC_IDX_CELL1];
     return adcBuffer[ADC_IDX_CELL2]*ADC_CELL2_COEF;
 }
 

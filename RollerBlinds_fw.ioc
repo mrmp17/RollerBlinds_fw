@@ -1,11 +1,13 @@
 #MicroXplorer Configuration settings - do not modify
-ADC.ClockPrescaler=ADC_CLOCK_SYNC_PCLK_DIV4
+ADC.ClockPrescaler=ADC_CLOCK_ASYNC_DIV8
 ADC.ContinuousConvMode=ENABLE
 ADC.DMAContinuousRequests=ENABLE
 ADC.DiscontinuousConvMode=DISABLE
-ADC.IPParameters=ClockPrescaler,Overrun,DMAContinuousRequests,SamplingTime,ContinuousConvMode,DiscontinuousConvMode,OversamplingMode
+ADC.IPParameters=ClockPrescaler,Overrun,DMAContinuousRequests,SamplingTime,ContinuousConvMode,DiscontinuousConvMode,OversamplingMode,Ratio,RightBitShift
 ADC.Overrun=ADC_OVR_DATA_OVERWRITTEN
-ADC.OversamplingMode=DISABLE
+ADC.OversamplingMode=ENABLE
+ADC.Ratio=ADC_OVERSAMPLING_RATIO_16
+ADC.RightBitShift=ADC_RIGHTBITSHIFT_4
 ADC.SamplingTime=ADC_SAMPLETIME_160CYCLES_5
 Dma.ADC.0.Direction=DMA_PERIPH_TO_MEMORY
 Dma.ADC.0.Instance=DMA1_Channel1
@@ -31,7 +33,7 @@ Dma.USART2_TX.1.RequestParameters=Instance,Direction,PeriphInc,MemInc,PeriphData
 FREERTOS.FootprintOK=true
 FREERTOS.IPParameters=Tasks01,configTOTAL_HEAP_SIZE,FootprintOK,configMINIMAL_STACK_SIZE,MEMORY_ALLOCATION,configUSE_MUTEXES
 FREERTOS.MEMORY_ALLOCATION=2
-FREERTOS.Tasks01=defaultTask,0,96,StartDefaultTask,Default,NULL,Static,defaultTaskBuffer,defaultTaskControlBlock;tmc_task,2,96,tmc_task_entry,Default,NULL,Static,uiTaskBuffer,uiTaskControlBlock;main_logic_task,0,96,main_logic_task_entry,Default,NULL,Static,main_logic_taskBuffer,main_logic_taskControlBlock
+FREERTOS.Tasks01=misc_task,0,96,misc_task_entry,Default,NULL,Static,defaultTaskBuffer,defaultTaskControlBlock;tmc_task,2,96,tmc_task_entry,Default,NULL,Static,uiTaskBuffer,uiTaskControlBlock;main_logic_task,0,96,main_logic_task_entry,Default,NULL,Static,main_logic_taskBuffer,main_logic_taskControlBlock;esp_task,0,96,esp_task_entry,Default,NULL,Static,esp_taskBuffer,esp_taskControlBlock;analog_task,0,96,analog_task_entry,Default,NULL,Static,analog_taskBuffer,analog_taskControlBlock
 FREERTOS.configMINIMAL_STACK_SIZE=96
 FREERTOS.configTOTAL_HEAP_SIZE=512
 FREERTOS.configUSE_MUTEXES=0

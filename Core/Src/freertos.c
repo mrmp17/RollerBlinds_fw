@@ -54,8 +54,10 @@ extern int32_t g_steps_abs; //global variables for absolute step counter and ste
 extern int32_t g_pos_cmd; //global position command variable from hw.c file
 extern bool g_pos_ctrl_active; //global positional controll active flag from hw.c file
 
+extern bool g_charging_flag; //global charging flag from hw.c file
+
 /* USER CODE END Variables */
-osThreadId defaultTaskHandle;
+osThreadId misc_taskHandle;
 uint32_t defaultTaskBuffer[ 96 ];
 osStaticThreadDef_t defaultTaskControlBlock;
 osThreadId tmc_taskHandle;
@@ -64,15 +66,23 @@ osStaticThreadDef_t uiTaskControlBlock;
 osThreadId main_logic_taskHandle;
 uint32_t main_logic_taskBuffer[ 96 ];
 osStaticThreadDef_t main_logic_taskControlBlock;
+osThreadId esp_taskHandle;
+uint32_t esp_taskBuffer[ 96 ];
+osStaticThreadDef_t esp_taskControlBlock;
+osThreadId analog_taskHandle;
+uint32_t analog_taskBuffer[ 96 ];
+osStaticThreadDef_t analog_taskControlBlock;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 
 /* USER CODE END FunctionPrototypes */
 
-void StartDefaultTask(void const * argument);
+void misc_task_entry(void const * argument);
 void tmc_task_entry(void const * argument);
 void main_logic_task_entry(void const * argument);
+void esp_task_entry(void const * argument);
+void analog_task_entry(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -119,9 +129,9 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* definition and creation of defaultTask */
-  osThreadStaticDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 96, defaultTaskBuffer, &defaultTaskControlBlock);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+  /* definition and creation of misc_task */
+  osThreadStaticDef(misc_task, misc_task_entry, osPriorityNormal, 0, 96, defaultTaskBuffer, &defaultTaskControlBlock);
+  misc_taskHandle = osThreadCreate(osThread(misc_task), NULL);
 
   /* definition and creation of tmc_task */
   osThreadStaticDef(tmc_task, tmc_task_entry, osPriorityHigh, 0, 96, uiTaskBuffer, &uiTaskControlBlock);
@@ -131,71 +141,78 @@ void MX_FREERTOS_Init(void) {
   osThreadStaticDef(main_logic_task, main_logic_task_entry, osPriorityNormal, 0, 96, main_logic_taskBuffer, &main_logic_taskControlBlock);
   main_logic_taskHandle = osThreadCreate(osThread(main_logic_task), NULL);
 
+  /* definition and creation of esp_task */
+  osThreadStaticDef(esp_task, esp_task_entry, osPriorityNormal, 0, 96, esp_taskBuffer, &esp_taskControlBlock);
+  esp_taskHandle = osThreadCreate(osThread(esp_task), NULL);
+
+  /* definition and creation of analog_task */
+  osThreadStaticDef(analog_task, analog_task_entry, osPriorityNormal, 0, 96, analog_taskBuffer, &analog_taskControlBlock);
+  analog_taskHandle = osThreadCreate(osThread(analog_task), NULL);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
 }
 
-/* USER CODE BEGIN Header_StartDefaultTask */
+/* USER CODE BEGIN Header_misc_task_entry */
 /**
-  * @brief  Function implementing the defaultTask thread.
+  * @brief  Function implementing the misc_task thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void const * argument)
+/* USER CODE END Header_misc_task_entry */
+void misc_task_entry(void const * argument)
 {
-  /* USER CODE BEGIN StartDefaultTask */
+  /* USER CODE BEGIN misc_task_entry */
   /* Infinite loop */
+    for(;;)
+    {
 
-  for(;;)
-  {
 
+        if(hw_sw1()){
+            //tmc_startStepGen();
+            //tmc_commandVelocity(5000);
+            //tmc_direction(true);
 
-      if(hw_sw1()){
-          //tmc_startStepGen();
-          //tmc_commandVelocity(5000);
-          //tmc_direction(true);
+            //hw_tmcEnable(true);
+            //tmc_startStepGen();
+            hw_redLed(true);
+            tmc_commandPosition(g_steps_abs+205000);
+            while(tmc_posCtrlActive());
+            //tmc_commandPosition(g_steps_abs+10000);
+            //while(tmc_posCtrlActive());
+            //tmc_commandVelocity(-4000);
 
-          //hw_tmcEnable(true);
-          //tmc_startStepGen();
-          hw_redLed(true);
-          tmc_commandPosition(g_steps_abs+205000);
-          while(tmc_posCtrlActive());
-          //tmc_commandPosition(g_steps_abs+10000);
-          //while(tmc_posCtrlActive());
-          //tmc_commandVelocity(-4000);
+            //tmc_stopStepGen();
+            //hw_tmcEnable(false);
+        }
+        else if(hw_sw2()){
+            //tmc_commandVelocity(4000);
+        }
+        else if(hw_sw3()){
+            //tmc_startStepGen();
+            //tmc_commandVelocity(-5000);
+            //tmc_direction(false);
 
-          //tmc_stopStepGen();
-          //hw_tmcEnable(false);
-      }
-      else if(hw_sw2()){
-          //tmc_commandVelocity(4000);
-      }
-      else if(hw_sw3()){
-          //tmc_startStepGen();
-          //tmc_commandVelocity(-5000);
-          //tmc_direction(false);
+            //hw_tmcEnable(true);
+            //tmc_startStepGen();
 
-          //hw_tmcEnable(true);
-          //tmc_startStepGen();
+            //tmc_commandPosition(g_steps_abs-205000);
+            hw_redLed(true);
+            tmc_commandPosition(g_steps_abs-205000);
+            while(tmc_posCtrlActive());
+            //tmc_stopStepGen();
+            //hw_tmcEnable(false);
+        }
+        else{
+            //tmc_stopStepGen();
+            tmc_commandVelocity(0);
+        }
+        //hw_sleep();
 
-          //tmc_commandPosition(g_steps_abs-205000);
-          hw_redLed(true);
-          tmc_commandPosition(g_steps_abs-205000);
-          while(tmc_posCtrlActive());
-          //tmc_stopStepGen();
-          //hw_tmcEnable(false);
-      }
-      else{
-          //tmc_stopStepGen();
-          tmc_commandVelocity(0);
-      }
-      hw_sleep();
-
-  }
-  /* USER CODE END StartDefaultTask */
+    }
+  /* USER CODE END misc_task_entry */
 }
 
 /* USER CODE BEGIN Header_tmc_task_entry */
@@ -322,7 +339,13 @@ void main_logic_task_entry(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(10000);
+    osDelay(10);
+    uint32_t v1 = hw_getCell1Voltage();
+    uint32_t v2 = hw_getCell2Voltage();
+    uint32_t v3 = hw_getPackVoltage();
+    dump(v1);
+    dump(v2);
+    dump(v3);
 
 //    dbg_debugPrint("time\n");
 //    uint8_t cajt[6] = {0};
@@ -346,6 +369,42 @@ void main_logic_task_entry(void const * argument)
 //    dbg_debugPrint("wkp\n");
   }
   /* USER CODE END main_logic_task_entry */
+}
+
+/* USER CODE BEGIN Header_esp_task_entry */
+/**
+* @brief Function implementing the esp_task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_esp_task_entry */
+void esp_task_entry(void const * argument)
+{
+  /* USER CODE BEGIN esp_task_entry */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END esp_task_entry */
+}
+
+/* USER CODE BEGIN Header_analog_task_entry */
+/**
+* @brief Function implementing the analog_task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_analog_task_entry */
+void analog_task_entry(void const * argument)
+{
+  /* USER CODE BEGIN analog_task_entry */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END analog_task_entry */
 }
 
 /* Private application code --------------------------------------------------*/

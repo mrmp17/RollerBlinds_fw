@@ -124,6 +124,8 @@ int main(void)
   hw_setRtcDate(13, 12, 22);
   hw_setRtcTime(19, 19, 19);
 
+  HAL_Delay(5000);
+
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in freertos.c) */
