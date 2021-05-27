@@ -81,6 +81,13 @@ void MX_ADC_Init(void)
   {
     Error_Handler();
   }
+  /** Configure for the selected ADC regular channel to be converted.
+  */
+  sConfig.Channel = ADC_CHANNEL_4;
+  if (HAL_ADC_ConfigChannel(&hadc, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN ADC_Init 2 */
 
   /* USER CODE END ADC_Init 2 */
@@ -103,8 +110,9 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
     /**ADC GPIO Configuration
     PA0     ------> ADC_IN0
     PA1     ------> ADC_IN1
+    PA4     ------> ADC_IN4
     */
-    GPIO_InitStruct.Pin = CELL2_ADC_Pin|CELL1_ADC_Pin;
+    GPIO_InitStruct.Pin = CELL2_ADC_Pin|CELL1_ADC_Pin|VBUS_PRESENT_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -147,8 +155,9 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
     /**ADC GPIO Configuration
     PA0     ------> ADC_IN0
     PA1     ------> ADC_IN1
+    PA4     ------> ADC_IN4
     */
-    HAL_GPIO_DeInit(GPIOA, CELL2_ADC_Pin|CELL1_ADC_Pin);
+    HAL_GPIO_DeInit(GPIOA, CELL2_ADC_Pin|CELL1_ADC_Pin|VBUS_PRESENT_Pin);
 
     /* ADC1 DMA DeInit */
     HAL_DMA_DeInit(adcHandle->DMA_Handle);

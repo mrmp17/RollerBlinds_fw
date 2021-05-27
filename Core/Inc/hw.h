@@ -48,13 +48,21 @@ bool hw_vbusPresent();
 //###########################################################
 
 //############ ADC FUNCTIONS ##########
-#define ADC_NUM_CH 2
+#define ADC_NUM_CH 3
 #define ADC_IDX_CELL1 1
 #define ADC_IDX_CELL2 0
+#define ADC_IDX_VBUS 2
 #define ADC_REF 3300
 #define ADC_MAX_VAL 4095
 #define ADC_CELL1_COEF 1.268046 //raw reading to mV: 1/0.635514 divider coef * ADC_REF * 1/4095
 #define ADC_CELL2_COEF 2.210951 //raw reading to mV: 1/0.364486 divider coef * ADC_REF * 1/4095
+#define ADC_VBUS_COEF 1.268046
+#define LOW_CELL_VOLT_THR 3000
+#define LOW_CELL_VOLT_REC 3200
+#define BAT_BAL_START_THR 10
+#define BAT_BAL_STOP_THR 5
+#define BAT_FULL_CHRG_THR 4150
+#define VBUS_PRESENT_THR 4000
 
 
 void hw_adcStart();
@@ -62,6 +70,7 @@ void hw_adcStop();
 uint32_t hw_getCell1Voltage();
 uint32_t hw_getCell2Voltage();
 uint32_t hw_getPackVoltage();
+uint32_t hw_getVbusVoltage();
 //#####################################
 
 //############ STEPPER POSITIONING FUNCTIONS ##########

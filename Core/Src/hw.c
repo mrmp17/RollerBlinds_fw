@@ -95,8 +95,13 @@ bool hw_tmcGetIndex(){
 
 //get status of vbus voltage. true if usb vbus present. (this could be connected to ADC in the future)
 bool hw_vbusPresent(){
-    if(HAL_GPIO_ReadPin(VBUS_PRESENT_GPIO_Port, VBUS_PRESENT_Pin)==GPIO_PIN_SET) return true;
+    //if(HAL_GPIO_ReadPin(VBUS_PRESENT_GPIO_Port, VBUS_PRESENT_Pin)==GPIO_PIN_SET) return true;
+    //else return false;
+    if(hw_getVbusVoltage() > VBUS_PRESENT_THR){
+        return true;
+    }
     else return false;
+
 }
 
 
@@ -104,6 +109,9 @@ bool hw_vbusPresent(){
 
 uint32_t adcBuffer[ADC_NUM_CH] = {0};
 bool g_charging_flag = false; //value set and reset by analog task
+bool g_low_battery_flag = false; //value set and reset by analog task
+bool g_balance_active_flag = false; //value set by analog task
+bool g_fully_charged_flag = false; //fully charged flag set by analog task
 void hw_adcStart(){
     HAL_ADCEx_Calibration_Start(&hadc, ADC_SINGLE_ENDED);
     HAL_ADC_Start_DMA(&hadc, adcBuffer, ADC_NUM_CH);
@@ -129,6 +137,12 @@ uint32_t hw_getCell2Voltage(){
 uint32_t hw_getPackVoltage(){
     //return adcBuffer[ADC_IDX_CELL1];
     return adcBuffer[ADC_IDX_CELL2]*ADC_CELL2_COEF;
+}
+
+//returns vbus voltage in mV
+uint32_t hw_getVbusVoltage(){
+    //return adcBuffer[ADC_IDX_CELL1];
+    return adcBuffer[ADC_IDX_VBUS]*ADC_VBUS_COEF;
 }
 
 

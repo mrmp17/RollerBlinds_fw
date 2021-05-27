@@ -55,6 +55,9 @@ extern int32_t g_pos_cmd; //global position command variable from hw.c file
 extern bool g_pos_ctrl_active; //global positional controll active flag from hw.c file
 
 extern bool g_charging_flag; //global charging flag from hw.c file
+extern bool g_low_battery_flag; //global low batterz flag from hw.c
+extern bool g_balance_active_flag; //global balance active flag from hw.c
+extern bool g_fully_charged_flag; //global fullu charged flag from hw.c
 
 /* USER CODE END Variables */
 osThreadId misc_taskHandle;
@@ -209,7 +212,14 @@ void misc_task_entry(void const * argument)
             //tmc_stopStepGen();
             tmc_commandVelocity(0);
         }
-        //hw_sleep();
+        if(g_charging_flag){
+            hw_blueLed(true);
+        }
+        else{
+            hw_sleep();
+            hw_blueLed(false);
+        }
+
 
     }
   /* USER CODE END misc_task_entry */
@@ -385,6 +395,8 @@ void esp_task_entry(void const * argument)
   for(;;)
   {
     osDelay(1);
+    uint32_t sdf = hw_getVbusVoltage();
+    dump(sdf);
   }
   /* USER CODE END esp_task_entry */
 }
@@ -402,7 +414,63 @@ void analog_task_entry(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+      //low battery flag logic (whit hysteresis)
+      if(!g_low_battery_flag && (hw_getCell1Voltage()<LOW_CELL_VOLT_THR || hw_getCell2Voltage()<LOW_CELL_VOLT_THR)){
+          //if low battery flag not set and one cell dips below LOW_CELL_VOLT_THR, set low bat flag
+          g_low_battery_flag = true;
+      }
+      if(g_low_battery_flag && (hw_getCell1Voltage()>LOW_CELL_VOLT_REC || hw_getCell2Voltage()>LOW_CELL_VOLT_REC)){
+          //if low battery flag is set and both cells rise above LOW_CELL_VOLT_REC, reset low bat flag
+          g_low_battery_flag = false;
+      }
+
+      //charging flag logic
+      if(hw_vbusPresent()){
+          g_charging_flag = true;
+          if(hw_getCell1Voltage() > BAT_FULL_CHRG_THR && hw_getCell2Voltage() > BAT_FULL_CHRG_THR){
+              //battery is fully charged
+              g_fully_charged_flag = true;
+          }
+      }
+      else{
+          g_charging_flag = false;
+          g_fully_charged_flag = false;
+      }
+
+      //balancing logic (with hysteresis)
+      if(g_charging_flag){
+          //balance only when charger connected
+          if(!g_balance_active_flag && abs(hw_getCell1Voltage()-hw_getCell2Voltage()) > BAT_BAL_START_THR){
+              //if imbalance is larger than thrashold, set balancing flag
+              g_balance_active_flag = true;
+          }
+          if(g_balance_active_flag && abs(hw_getCell1Voltage()-hw_getCell2Voltage()) < BAT_BAL_STOP_THR){
+              //if balancing is active and cells reached close enough point, stop balancing
+              g_balance_active_flag = false;
+          }
+      }
+      else{
+          g_balance_active_flag = false;
+      }
+
+      //balancing on off logic
+      if(g_balance_active_flag){
+          if(hw_getCell1Voltage() > hw_getCell2Voltage()){
+              //cell 1 is higher, turn balancing on on cell 1
+              hw_bal1(true);
+          }
+          else{
+              //cell 2 is higher
+              hw_bal2(true);
+          }
+      }
+      else{
+          hw_bal1(false);
+          hw_bal2(false);
+      }
+
+
+
   }
   /* USER CODE END analog_task_entry */
 }
