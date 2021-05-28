@@ -106,7 +106,7 @@ int main(void)
   hw_blueLed(true);
   HAL_Delay(500);
 
-  hw_tmcPower(true);
+  //hw_tmcPower(true);
   hw_tmcIoSply(true);
   hw_redLed(true);
   hw_blueLed(false);
@@ -120,9 +120,9 @@ int main(void)
   hw_adcStart();
   //tmc_startStepGen();
 
+  hw_setRtcTime(21, 25, 19);
+  hw_setRtcDate(28, 5, 21);
 
-  hw_setRtcDate(13, 12, 22);
-  hw_setRtcTime(19, 19, 19);
 
   HAL_Delay(5000);
 
@@ -144,29 +144,7 @@ int main(void)
 
   while (1){
 
-      int32_t n = g_steps_abs;
-      dump(n);
 
-
-
-
-      if(hw_sw1()){
-          tmc_startStepGen();
-          tmc_commandVelocity(10000);
-          tmc_direction(true);
-      }
-      else if(hw_sw3()){
-          tmc_startStepGen();
-          tmc_commandVelocity(10000);
-          tmc_direction(false);
-      }
-      else{
-          //tmc_stopStepGen();
-          tmc_commandVelocity(10000);
-      }
-
-      //HAL_Delay(10000);
-      //HAL_TIM_PWM_Stop_IT(&htim2, TIM_CHANNEL_1);
 
 
       

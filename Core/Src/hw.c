@@ -265,8 +265,8 @@ void hw_sleep(){
 
     hw_adcStart();
     //hw_espPower(false);
-    hw_tmcPower(true);
-    hw_tmcIoSply(true);
+    //hw_tmcPower(true);
+    //hw_tmcIoSply(true);
 
     HAL_ResumeTick();
 
@@ -279,7 +279,7 @@ void hw_setRtcTime(uint8_t h, uint8_t m, uint8_t s){
     sTime.Hours = h;
     sTime.Minutes = m;
     sTime.Seconds = s;
-    sTime.StoreOperation = RTC_STOREOPERATION_SET;
+    //sTime.StoreOperation = RTC_STOREOPERATION_SET;
     HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
     //todo: DayLightSaving ??
     //todo: store operation value?
@@ -297,41 +297,47 @@ void hw_setRtcDate(uint8_t date, uint8_t month, uint8_t year){
 }
 uint8_t hw_getHour(){
     //todo: check if HAL_RTC_GetTime returns OK
-    RTC_TimeTypeDef sTime;
+    RTC_TimeTypeDef sTime = {0};
     HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+    RTC_DateTypeDef sDate = {0};
+    HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN); //read date to unlatch shadow registers
     return sTime.Hours;
 }
 uint8_t hw_getMinute(){
     //todo: check if HAL_RTC_GetTime returns OK
-    RTC_TimeTypeDef sTime;
+    RTC_TimeTypeDef sTime = {0};
     HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+    RTC_DateTypeDef sDate = {0};
+    HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN); //read date to unlatch shadow registers
     return sTime.Minutes;
 
 }
 uint8_t hw_getSecond(){
     //todo: check if HAL_RTC_GetTime returns OK
-    RTC_TimeTypeDef sTime;
+    RTC_TimeTypeDef sTime = {0};
     HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+    RTC_DateTypeDef sDate = {0};
+    HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN); //read date to unlatch shadow registers
     return sTime.Seconds;
 
 }
 uint8_t hw_getDay(){
     //todo: check if HAL_RTC_GetDate returns OK
-    RTC_DateTypeDef sDate;
+    RTC_DateTypeDef sDate = {0};
     HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
     return sDate.Date;
 
 }
 uint8_t hw_getMonth(){
     //todo: check if HAL_RTC_GetDate returns OK
-    RTC_DateTypeDef sDate;
+    RTC_DateTypeDef sDate = {0};
     HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
     return sDate.Month;
 
 }
 uint8_t hw_getYear(){
     //todo: check if HAL_RTC_GetDate returns OK
-    RTC_DateTypeDef sDate;
+    RTC_DateTypeDef sDate = {0};
     HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
     return sDate.Year;
 
@@ -412,6 +418,22 @@ bool hw_gpioConfigForSleep(){
 
 bool hw_gpioConfigForAwake(){
     MX_GPIO_Init();
+}
+
+//sets rtc time and date from compile time in __TIME__
+//todo: implement date
+void hw_setRtcFromCompileTime(){
+    char compileTimeStr[9] = __TIME__;
+    char hr[3] = {0};
+    char min[3] = {0};
+    char sec[3] = {0};
+    hr[0] = compileTimeStr[0];
+    hr[1] = compileTimeStr[1];
+    min[0] = compileTimeStr[3];
+    min[1] = compileTimeStr[4];
+    sec[0] = compileTimeStr[6];
+    sec[1] = compileTimeStr[7];
+
 }
 
 

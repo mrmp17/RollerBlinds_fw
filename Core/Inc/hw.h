@@ -22,6 +22,10 @@
 #include "main.h"
 
 
+#define POSITION_UP 0
+#define POSITION_DOWN -205000
+
+
 
 
 //############ LOW LEVEL GPIO MANIPULATION FUNCTIONS ##########
@@ -59,8 +63,8 @@ bool hw_vbusPresent();
 #define ADC_VBUS_COEF 1.268046
 #define LOW_CELL_VOLT_THR 3000
 #define LOW_CELL_VOLT_REC 3200
-#define BAT_BAL_START_THR 10
-#define BAT_BAL_STOP_THR 5
+#define BAT_BAL_START_THR 40
+#define BAT_BAL_STOP_THR 10
 #define BAT_FULL_CHRG_THR 4150
 #define VBUS_PRESENT_THR 4000
 
@@ -81,7 +85,7 @@ uint32_t hw_getVbusVoltage();
 #define STP_TIMER_CLK 2000000L
 #define TMC_MAX_VEL 5000
 #define TMC_MIN_VEL 100
-#define TMC_CRUISE_VEL 4000
+#define TMC_CRUISE_VEL 2200
 #define TMC_VEL_CHNG_PER_MS 10 //velocity can change 100 stpPerSec every millisecond
 #define TMC_POS_CTRL_RAMP_DOWN_LEN 1000 //speed ramping region in steps for positional controll
 void tmc_direction(bool dir);
@@ -110,6 +114,7 @@ uint8_t hw_getMonth();
 uint8_t hw_getYear();
 bool hw_gpioConfigForSleep();
 bool hw_gpioConfigForAwake();
+void hw_setRtcFromCompileTime();
 
 
 //#######################################################
