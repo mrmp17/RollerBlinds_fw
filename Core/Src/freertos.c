@@ -59,6 +59,9 @@ extern bool g_low_battery_flag; //global low batterz flag from hw.c
 extern bool g_balance_active_flag; //global balance active flag from hw.c
 extern bool g_fully_charged_flag; //global fullu charged flag from hw.c
 
+extern int32_t g_up_pos; //global up position from hw.c
+extern int32_t g_down_pos; //global down position from hw.c
+
 /* USER CODE END Variables */
 osThreadId misc_taskHandle;
 uint32_t defaultTaskBuffer[96];
@@ -177,30 +180,95 @@ void misc_task_entry(void const *argument) {
     /* Infinite loop */
     for (;;) {
 
+        //first run code
+        static uint8_t loopCtrl = 1;
+        while(loopCtrl){
+            switch(loopCtrl){
+                case 0:
+                    break;
+                case 1:
+                    //setting upper position. red led illuminated
+                    hw_redLed(true);
+                    hw_blueLed(false);
+                    if(hw_sw1()){
+                        tmc_commandVelocity(TMC_CRUISE_VEL); //jogging up
+                    }
+                    else if(hw_sw3()){
+                        tmc_commandVelocity(TMC_CRUISE_VEL); //jogging down
+                    }
+                    else{
+                        tmc_commandVelocity(0);
+                    }
+                    if(hw_sw3()){
+                        //set position button.
+                        tmc_commandVelocity(0);
+                        loopCtrl = 2;
+                        g_up_pos = g_steps_abs;
+                    }
+                    break;
+                case 2:
+                    //setting lower position. blue led illuminated
+                    hw_redLed(false);
+                    hw_blueLed(true);
+                    if(hw_sw1()){
+                        tmc_commandVelocity(TMC_CRUISE_VEL); //jogging up
+                    }
+                    else if(hw_sw3()){
+                        tmc_commandVelocity(TMC_CRUISE_VEL); //jogging down
+                    }
+                    else{
+                        tmc_commandVelocity(0);
+                    }
+                    if(hw_sw3()){
+                        //set position button.
+                        tmc_commandVelocity(0);
+                        g_down_pos = g_steps_abs;
+                        //calibration finished, blink a few times
+                        hw_redLed(false);
+                        hw_blueLed(false);
+                        osDelay(100);
+                        hw_redLed(true);
+                        hw_blueLed(true);
+                        osDelay(100);
+                        hw_redLed(false);
+                        hw_blueLed(false);
+                        osDelay(100);
+                        hw_redLed(true);
+                        hw_blueLed(true);
+                        osDelay(100);
+                        hw_redLed(false);
+                        hw_blueLed(false);
+                        //calibration now finished, we can exit while loop by setting loopctrl to 0
+                        loopCtrl = 0;
+                    }
+            }
+
+        }
+
         //automatic RTC closing
-        if (hw_getHour() == 21 && hw_getMinute() == 30 && hw_getSecond() < 20) {
+        if (1 && hw_getHour() == 21 && hw_getMinute() == 30 && hw_getSecond() < 20) {
             //closing time
             hw_tmcPower(true);
             hw_tmcIoSply(true);
             hw_redLed(true);
-            tmc_commandPosition(POSITION_DOWN);
+            tmc_commandPosition(g_down_pos);
             while (tmc_posCtrlActive());
         }
 
             //automatic RTC opening
-        else if (hw_getHour() == 10 && hw_getMinute() == 0 && hw_getSecond() < 20) {
+        else if (1 && hw_getHour() == 9 && hw_getMinute() == 5 && hw_getSecond() < 20) {
             //opening time
             hw_tmcPower(true);
             hw_tmcIoSply(true);
             hw_redLed(true);
-            tmc_commandPosition(POSITION_UP);
+            tmc_commandPosition(g_up_pos);
             while (tmc_posCtrlActive());
         } else if (hw_sw1()) {
             //gor
             hw_tmcPower(true);
             hw_tmcIoSply(true);
             hw_redLed(true);
-            tmc_commandPosition(POSITION_UP);
+            tmc_commandPosition(g_up_pos);
             while (tmc_posCtrlActive());
 
         } else if (hw_sw2()) {
@@ -209,7 +277,7 @@ void misc_task_entry(void const *argument) {
             hw_tmcPower(true);
             hw_tmcIoSply(true);
             hw_redLed(true);
-            tmc_commandPosition(POSITION_DOWN);
+            tmc_commandPosition(g_down_pos);
             while (tmc_posCtrlActive());
 
         } else {
@@ -387,11 +455,22 @@ void esp_task_entry(void const *argument) {
     /* Infinite loop */
     for (;;) {
         osDelay(1);
-//        volatile uint8_t hr = hw_getHour();
-//        volatile uint8_t min = hw_getMinute();
-//        volatile uint8_t sec = hw_getSecond();
-//        volatile int a = 0;
 
+        // communication with ESP8266 module:
+        // - STM turns on ESP power
+        // - STM sends status(error, battery) and clock refresh request to ESP (frame COMM1)
+        // - ESP connects to wifi, gets opening/closing time and time/date if requested
+        // - ESP sends data to STM (frame COMM2)
+        // - STM shuts off power to ESP
+
+        // STM implements timeouts on communication
+
+        //all frames are arrays of bytes (fixed length)
+
+        // COMM1 frame: [bStatus, bBatteryPercent, bRequestTimeRefresh] len=3
+        // COMM2 frame: [bOpenHr, bOpenMin, bCloseHr, bCloseMin, bTimeNowHr, bTimeNowMin, bTimeNowSec, bDateNowDay, bDateNowMonth, bDateNowYear] len=10
+
+        // if time values not available or requested set bytes to 0xFF
     }
     /* USER CODE END esp_task_entry */
 }

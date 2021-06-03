@@ -6,6 +6,7 @@
 
 // "tmc" is short for TMC2208 stepper motor dirver
 // "esp" is short for ESP8266 wifi modem
+// "stm" is short for STM32 MACU this code is running on
 // "SpS" is short for stepper steps per second speed
 
 #ifndef ROLLERBLINDS_FW_HW_H
@@ -85,7 +86,7 @@ uint32_t hw_getVbusVoltage();
 #define STP_TIMER_CLK 2000000L
 #define TMC_MAX_VEL 5000
 #define TMC_MIN_VEL 100
-#define TMC_CRUISE_VEL 2200
+#define TMC_CRUISE_VEL 3500
 #define TMC_VEL_CHNG_PER_MS 10 //velocity can change 100 stpPerSec every millisecond
 #define TMC_POS_CTRL_RAMP_DOWN_LEN 1000 //speed ramping region in steps for positional controll
 void tmc_direction(bool dir);
@@ -116,6 +117,10 @@ bool hw_gpioConfigForSleep();
 bool hw_gpioConfigForAwake();
 void hw_setRtcFromCompileTime();
 
+
+//#######################################################
+
+//######################### ESP COMMS ###################
 
 //#######################################################
 

@@ -120,7 +120,7 @@ int main(void)
   hw_adcStart();
   //tmc_startStepGen();
 
-  hw_setRtcTime(21, 25, 19);
+  hw_setRtcTime(19, 8, 19);
   hw_setRtcDate(28, 5, 21);
 
 

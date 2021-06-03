@@ -173,6 +173,10 @@ void tmc_stopStepGen(){
     HAL_TIM_PWM_Stop_IT(&htim2, TIM_CHANNEL_1);
 }
 
+//global roller blids up and down positions. get set at first run manula calibration
+int32_t g_up_pos = 0;
+int32_t g_down_pos = 0;
+
 int32_t g_vel_act = 0; //actual motor velocity global variable
 //sets step pulse frequency for correct steps per second - stepper motor velocity
 //returns true if parameter in range (set to nearest possible freq)
