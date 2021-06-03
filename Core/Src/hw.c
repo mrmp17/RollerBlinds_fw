@@ -439,8 +439,16 @@ void hw_setRtcFromCompileTime(){
     sec[1] = compileTimeStr[7];
 
 }
+//global flag, indicates ESP comunication in progress.
+//main logic sets flag and waits for it to be reset by esp task when finished
+//timeout is implemented internaliy in esp task
+// value 1 means get open close timings
+// value 2 means get open close timings + rtc refresh time
+uint8_t g_esp_comms_active = 0;
 
-
+uint8_t g_SoC = 100; //global battery state of charge variable
+uint8_t g_status = 0; //global status code (indicates open/close status and errors)
+bool g_request_rtc_refresh = false; //global rtc refresh request flag
 
 
 

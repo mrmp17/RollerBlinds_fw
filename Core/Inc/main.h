@@ -74,6 +74,10 @@ void Error_Handler(void);
 #define LED_BLUE_GPIO_Port GPIOA
 #define AUX_GPIO_Pin GPIO_PIN_7
 #define AUX_GPIO_GPIO_Port GPIOA
+#define ESP_TX_Pin GPIO_PIN_10
+#define ESP_TX_GPIO_Port GPIOB
+#define ESP_RX_Pin GPIO_PIN_11
+#define ESP_RX_GPIO_Port GPIOB
 #define ESP_WAKE_Pin GPIO_PIN_12
 #define ESP_WAKE_GPIO_Port GPIOB
 #define ESP_PWR_CTRL_Pin GPIO_PIN_13

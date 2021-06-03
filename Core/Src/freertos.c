@@ -62,21 +62,27 @@ extern bool g_fully_charged_flag; //global fullu charged flag from hw.c
 extern int32_t g_up_pos; //global up position from hw.c
 extern int32_t g_down_pos; //global down position from hw.c
 
+extern bool g_esp_comms_active; //global esp comms active flag from hw.c
+
+extern uint8_t g_SoC; //global battery state of charge variable from hw.c
+extern uint8_t g_status; //global status code (indicates open/close status and errors) from hw.c
+extern bool g_request_rtc_refresh; //global rtc time refresh request flag from hw.c
+
 /* USER CODE END Variables */
 osThreadId misc_taskHandle;
-uint32_t defaultTaskBuffer[96];
+uint32_t defaultTaskBuffer[ 96 ];
 osStaticThreadDef_t defaultTaskControlBlock;
 osThreadId tmc_taskHandle;
-uint32_t uiTaskBuffer[96];
+uint32_t uiTaskBuffer[ 96 ];
 osStaticThreadDef_t uiTaskControlBlock;
 osThreadId main_logic_taskHandle;
-uint32_t main_logic_taskBuffer[96];
+uint32_t main_logic_taskBuffer[ 96 ];
 osStaticThreadDef_t main_logic_taskControlBlock;
 osThreadId esp_taskHandle;
-uint32_t esp_taskBuffer[96];
+uint32_t esp_taskBuffer[ 96 ];
 osStaticThreadDef_t esp_taskControlBlock;
 osThreadId analog_taskHandle;
-uint32_t analog_taskBuffer[96];
+uint32_t analog_taskBuffer[ 96 ];
 osStaticThreadDef_t analog_taskControlBlock;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -84,21 +90,16 @@ osStaticThreadDef_t analog_taskControlBlock;
 
 /* USER CODE END FunctionPrototypes */
 
-void misc_task_entry(void const *argument);
-
-void tmc_task_entry(void const *argument);
-
-void main_logic_task_entry(void const *argument);
-
-void esp_task_entry(void const *argument);
-
-void analog_task_entry(void const *argument);
+void misc_task_entry(void const * argument);
+void tmc_task_entry(void const * argument);
+void main_logic_task_entry(void const * argument);
+void esp_task_entry(void const * argument);
+void analog_task_entry(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* GetIdleTaskMemory prototype (linked to static allocation support) */
-void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer,
-                                   uint32_t *pulIdleTaskStackSize);
+void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize );
 
 /* USER CODE BEGIN GET_IDLE_TASK_MEMORY */
 static StaticTask_t xIdleTaskTCBBuffer;
@@ -119,52 +120,50 @@ void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer, StackTyp
   * @retval None
   */
 void MX_FREERTOS_Init(void) {
-    /* USER CODE BEGIN Init */
+  /* USER CODE BEGIN Init */
 
-    /* USER CODE END Init */
+  /* USER CODE END Init */
 
-    /* USER CODE BEGIN RTOS_MUTEX */
+  /* USER CODE BEGIN RTOS_MUTEX */
     /* add mutexes, ... */
-    /* USER CODE END RTOS_MUTEX */
+  /* USER CODE END RTOS_MUTEX */
 
-    /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
     /* add semaphores, ... */
-    /* USER CODE END RTOS_SEMAPHORES */
+  /* USER CODE END RTOS_SEMAPHORES */
 
-    /* USER CODE BEGIN RTOS_TIMERS */
+  /* USER CODE BEGIN RTOS_TIMERS */
     /* start timers, add new ones, ... */
-    /* USER CODE END RTOS_TIMERS */
+  /* USER CODE END RTOS_TIMERS */
 
-    /* USER CODE BEGIN RTOS_QUEUES */
+  /* USER CODE BEGIN RTOS_QUEUES */
     /* add queues, ... */
-    /* USER CODE END RTOS_QUEUES */
+  /* USER CODE END RTOS_QUEUES */
 
-    /* Create the thread(s) */
-    /* definition and creation of misc_task */
-    osThreadStaticDef(misc_task, misc_task_entry, osPriorityNormal, 0, 96, defaultTaskBuffer, &defaultTaskControlBlock);
-    misc_taskHandle = osThreadCreate(osThread(misc_task), NULL);
+  /* Create the thread(s) */
+  /* definition and creation of misc_task */
+  osThreadStaticDef(misc_task, misc_task_entry, osPriorityNormal, 0, 96, defaultTaskBuffer, &defaultTaskControlBlock);
+  misc_taskHandle = osThreadCreate(osThread(misc_task), NULL);
 
-    /* definition and creation of tmc_task */
-    osThreadStaticDef(tmc_task, tmc_task_entry, osPriorityHigh, 0, 96, uiTaskBuffer, &uiTaskControlBlock);
-    tmc_taskHandle = osThreadCreate(osThread(tmc_task), NULL);
+  /* definition and creation of tmc_task */
+  osThreadStaticDef(tmc_task, tmc_task_entry, osPriorityHigh, 0, 96, uiTaskBuffer, &uiTaskControlBlock);
+  tmc_taskHandle = osThreadCreate(osThread(tmc_task), NULL);
 
-    /* definition and creation of main_logic_task */
-    osThreadStaticDef(main_logic_task, main_logic_task_entry, osPriorityNormal, 0, 96, main_logic_taskBuffer,
-                      &main_logic_taskControlBlock);
-    main_logic_taskHandle = osThreadCreate(osThread(main_logic_task), NULL);
+  /* definition and creation of main_logic_task */
+  osThreadStaticDef(main_logic_task, main_logic_task_entry, osPriorityNormal, 0, 96, main_logic_taskBuffer, &main_logic_taskControlBlock);
+  main_logic_taskHandle = osThreadCreate(osThread(main_logic_task), NULL);
 
-    /* definition and creation of esp_task */
-    osThreadStaticDef(esp_task, esp_task_entry, osPriorityNormal, 0, 96, esp_taskBuffer, &esp_taskControlBlock);
-    esp_taskHandle = osThreadCreate(osThread(esp_task), NULL);
+  /* definition and creation of esp_task */
+  osThreadStaticDef(esp_task, esp_task_entry, osPriorityNormal, 0, 96, esp_taskBuffer, &esp_taskControlBlock);
+  esp_taskHandle = osThreadCreate(osThread(esp_task), NULL);
 
-    /* definition and creation of analog_task */
-    osThreadStaticDef(analog_task, analog_task_entry, osPriorityNormal, 0, 96, analog_taskBuffer,
-                      &analog_taskControlBlock);
-    analog_taskHandle = osThreadCreate(osThread(analog_task), NULL);
+  /* definition and creation of analog_task */
+  osThreadStaticDef(analog_task, analog_task_entry, osPriorityNormal, 0, 96, analog_taskBuffer, &analog_taskControlBlock);
+  analog_taskHandle = osThreadCreate(osThread(analog_task), NULL);
 
-    /* USER CODE BEGIN RTOS_THREADS */
+  /* USER CODE BEGIN RTOS_THREADS */
     /* add threads, ... */
-    /* USER CODE END RTOS_THREADS */
+  /* USER CODE END RTOS_THREADS */
 
 }
 
@@ -175,14 +174,16 @@ void MX_FREERTOS_Init(void) {
   * @retval None
   */
 /* USER CODE END Header_misc_task_entry */
-void misc_task_entry(void const *argument) {
-    /* USER CODE BEGIN misc_task_entry */
+void misc_task_entry(void const * argument)
+{
+  /* USER CODE BEGIN misc_task_entry */
     /* Infinite loop */
     for (;;) {
 
         //first run code
         static uint8_t loopCtrl = 1;
         while(loopCtrl){
+            hw_tmcPower(true);
             switch(loopCtrl){
                 case 0:
                     break;
@@ -194,16 +195,17 @@ void misc_task_entry(void const *argument) {
                         tmc_commandVelocity(TMC_CRUISE_VEL); //jogging up
                     }
                     else if(hw_sw3()){
-                        tmc_commandVelocity(TMC_CRUISE_VEL); //jogging down
+                        tmc_commandVelocity(-TMC_CRUISE_VEL); //jogging down
                     }
                     else{
                         tmc_commandVelocity(0);
                     }
-                    if(hw_sw3()){
+                    if(hw_sw2()){
                         //set position button.
                         tmc_commandVelocity(0);
                         loopCtrl = 2;
                         g_up_pos = g_steps_abs;
+                        osDelay(500);
                     }
                     break;
                 case 2:
@@ -214,12 +216,12 @@ void misc_task_entry(void const *argument) {
                         tmc_commandVelocity(TMC_CRUISE_VEL); //jogging up
                     }
                     else if(hw_sw3()){
-                        tmc_commandVelocity(TMC_CRUISE_VEL); //jogging down
+                        tmc_commandVelocity(-TMC_CRUISE_VEL); //jogging down
                     }
                     else{
                         tmc_commandVelocity(0);
                     }
-                    if(hw_sw3()){
+                    if(hw_sw2()){
                         //set position button.
                         tmc_commandVelocity(0);
                         g_down_pos = g_steps_abs;
@@ -244,6 +246,7 @@ void misc_task_entry(void const *argument) {
             }
 
         }
+        hw_tmcPower(false);
 
         //automatic RTC closing
         if (1 && hw_getHour() == 21 && hw_getMinute() == 30 && hw_getSecond() < 20) {
@@ -297,7 +300,7 @@ void misc_task_entry(void const *argument) {
 
 
     }
-    /* USER CODE END misc_task_entry */
+  /* USER CODE END misc_task_entry */
 }
 
 /* USER CODE BEGIN Header_tmc_task_entry */
@@ -307,8 +310,9 @@ void misc_task_entry(void const *argument) {
 * @retval None
 */
 /* USER CODE END Header_tmc_task_entry */
-void tmc_task_entry(void const *argument) {
-    /* USER CODE BEGIN tmc_task_entry */
+void tmc_task_entry(void const * argument)
+{
+  /* USER CODE BEGIN tmc_task_entry */
     /* Infinite loop */
     //while(1);
     for (;;) {
@@ -397,7 +401,7 @@ void tmc_task_entry(void const *argument) {
         //else: nothing to do, speed is already mached
         osDelay(20);
     }
-    /* USER CODE END tmc_task_entry */
+  /* USER CODE END tmc_task_entry */
 }
 
 /* USER CODE BEGIN Header_main_logic_task_entry */
@@ -407,8 +411,9 @@ void tmc_task_entry(void const *argument) {
 * @retval None
 */
 /* USER CODE END Header_main_logic_task_entry */
-void main_logic_task_entry(void const *argument) {
-    /* USER CODE BEGIN main_logic_task_entry */
+void main_logic_task_entry(void const * argument)
+{
+  /* USER CODE BEGIN main_logic_task_entry */
     /* Infinite loop */
     for (;;) {
         osDelay(10);
@@ -440,7 +445,7 @@ void main_logic_task_entry(void const *argument) {
 //    hw_redLed(true);
 //    dbg_debugPrint("wkp\n");
     }
-    /* USER CODE END main_logic_task_entry */
+  /* USER CODE END main_logic_task_entry */
 }
 
 /* USER CODE BEGIN Header_esp_task_entry */
@@ -450,8 +455,9 @@ void main_logic_task_entry(void const *argument) {
 * @retval None
 */
 /* USER CODE END Header_esp_task_entry */
-void esp_task_entry(void const *argument) {
-    /* USER CODE BEGIN esp_task_entry */
+void esp_task_entry(void const * argument)
+{
+  /* USER CODE BEGIN esp_task_entry */
     /* Infinite loop */
     for (;;) {
         osDelay(1);
@@ -468,11 +474,42 @@ void esp_task_entry(void const *argument) {
         //all frames are arrays of bytes (fixed length)
 
         // COMM1 frame: [bStatus, bBatteryPercent, bRequestTimeRefresh] len=3
-        // COMM2 frame: [bOpenHr, bOpenMin, bCloseHr, bCloseMin, bTimeNowHr, bTimeNowMin, bTimeNowSec, bDateNowDay, bDateNowMonth, bDateNowYear] len=10
+        // COMM2 frame: [bOpenHr, bOpenMin, bCloseHr, bCloseMin, bTimeNowHr, bTimeNowMin, bTimeNowSec, bDateNowDay, bDateNowMonth, bDateNowYear, bSum] len=11
 
+        //sum is cheksup byte. sum of all previous bytes (with normal uintt8_t overflow)
         // if time values not available or requested set bytes to 0xFF
+
+        if(g_esp_comms_active){
+            //main logic comanded
+            hw_espPower(true); //enable esp power
+            osDelay(100); //wait for esp to wake up and start running
+            uint8_t comm1[3] = {g_status, g_SoC, g_request_rtc_refresh};
+            HAL_UART_Transmit(&hlpuart1, comm1, 3, 100); //transmit first frame
+            uint8_t comm2[11] = {0};
+            if(HAL_UART_Receive(&hlpuart1, comm2, 11, 10000) == HAL_OK){ //wait for data received
+                //received data before timeout.
+                //todo: process data
+                uint8_t chksum = 0;
+                for(uint8_t n = 0 ; n<10 ; n++){
+                    chksum += comm2[n];
+                }
+                if(chksum != comm2[10]){
+                    //data is corupted
+                    hw_espPower(false); //turn power off
+                    g_esp_comms_active = false;
+                }
+                //todo: process data
+            }
+            else{
+                //data was not received, end communication
+                hw_espPower(false); //turn power off
+                g_esp_comms_active = false;
+            }
+
+
+        }
     }
-    /* USER CODE END esp_task_entry */
+  /* USER CODE END esp_task_entry */
 }
 
 /* USER CODE BEGIN Header_analog_task_entry */
@@ -482,8 +519,9 @@ void esp_task_entry(void const *argument) {
 * @retval None
 */
 /* USER CODE END Header_analog_task_entry */
-void analog_task_entry(void const *argument) {
-    /* USER CODE BEGIN analog_task_entry */
+void analog_task_entry(void const * argument)
+{
+  /* USER CODE BEGIN analog_task_entry */
     /* Infinite loop */
     for (;;) {
         //low battery flag logic (whit hysteresis)
@@ -543,7 +581,7 @@ void analog_task_entry(void const *argument) {
 
 
     }
-    /* USER CODE END analog_task_entry */
+  /* USER CODE END analog_task_entry */
 }
 
 /* Private application code --------------------------------------------------*/
