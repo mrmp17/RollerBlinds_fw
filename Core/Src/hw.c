@@ -452,6 +452,21 @@ bool g_request_rtc_refresh = false; //global rtc refresh request flag
 
 
 
+bool comm2_valid(uint8_t *comm2){
+    uint8_t chksum = 0;
+    for(uint8_t n = 0 ; n<COMM2_LEN-1 ; n++){
+        chksum += comm2[n];
+    }
+    chksum += 1;
+    if(chksum == comm2[10]){
+        //checksumm is OK
+        return true;
+    }
+    else return false;
+}
+
+
+
 
 
 

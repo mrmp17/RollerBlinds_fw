@@ -121,6 +121,24 @@ void hw_setRtcFromCompileTime();
 //#######################################################
 
 //######################### ESP COMMS ###################
+#define COMM1_LEN 3 //see esp comms description in esp task
+#define COMM2_LEN 11 //see esp comms description in esp task
+
+bool comm2_valid(uint8_t *comm2);
+bool comm2_RtcRefreshIncluded(uint8_t *comm2);
+uint8_t comm2_getOpenHr(uint8_t *comm2);
+uint8_t comm2_getOpenMin(uint8_t *comm2);
+uint8_t comm2_getCloseHr(uint8_t *comm2);
+uint8_t comm2_getCloseMin(uint8_t *comm2);
+
+uint8_t comm2_getRtcRefreshHr(uint8_t *comm2);
+uint8_t comm2_getRtcRefreshMin(uint8_t *comm2);
+uint8_t comm2_getRtcRefreshSec(uint8_t *comm2);
+uint8_t comm2_getRtcRefreshDate(uint8_t *comm2);
+uint8_t comm2_getRtcRefreshMonth(uint8_t *comm2);
+uint8_t comm2_getRtcRefreshYear(uint8_t *comm2);
+
+
 
 //#######################################################
 

@@ -68,6 +68,13 @@ extern uint8_t g_SoC; //global battery state of charge variable from hw.c
 extern uint8_t g_status; //global status code (indicates open/close status and errors) from hw.c
 extern bool g_request_rtc_refresh; //global rtc time refresh request flag from hw.c
 
+
+
+uint8_t comm2_data[COMM2_LEN] = {0}; //comm2 data array. filled by esp task, read by main logic task (misc task)
+
+
+
+
 /* USER CODE END Variables */
 osThreadId misc_taskHandle;
 uint32_t defaultTaskBuffer[ 96 ];
@@ -247,6 +254,8 @@ void misc_task_entry(void const * argument)
 
         }
         hw_tmcPower(false);
+
+        // ########## END OF STARTUP MANUAL POSITION CALIBRATION
 
         //automatic RTC closing
         if (1 && hw_getHour() == 21 && hw_getMinute() == 30 && hw_getSecond() < 20) {
@@ -474,39 +483,31 @@ void esp_task_entry(void const * argument)
         //all frames are arrays of bytes (fixed length)
 
         // COMM1 frame: [bStatus, bBatteryPercent, bRequestTimeRefresh] len=3
-        // COMM2 frame: [bOpenHr, bOpenMin, bCloseHr, bCloseMin, bTimeNowHr, bTimeNowMin, bTimeNowSec, bDateNowDay, bDateNowMonth, bDateNowYear, bSum] len=11
+        // COMM2 frame: [bOpenHr, bOpenMin, bCloseHr, bCloseMin, bTimeNowHr, bTimeNowMin, bTimeNowSec, bDateNowDate, bDateNowMonth, bDateNowYear, bSum] len=11
 
-        //sum is cheksup byte. sum of all previous bytes (with normal uintt8_t overflow)
+        //sum is cheksup byte. sum of all previous bytes + 1 (with normal uintt8_t overflow)
         // if time values not available or requested set bytes to 0xFF
 
         if(g_esp_comms_active){
             //main logic comanded
             hw_espPower(true); //enable esp power
             osDelay(100); //wait for esp to wake up and start running
-            uint8_t comm1[3] = {g_status, g_SoC, g_request_rtc_refresh};
-            HAL_UART_Transmit(&hlpuart1, comm1, 3, 100); //transmit first frame
-            uint8_t comm2[11] = {0};
-            if(HAL_UART_Receive(&hlpuart1, comm2, 11, 10000) == HAL_OK){ //wait for data received
+            uint8_t comm1[COMM1_LEN] = {g_status, g_SoC, g_request_rtc_refresh};
+            HAL_UART_Transmit(&hlpuart1, comm1, COMM1_LEN, 100); //transmit first frame
+            for(uint8_t i = 0 ; i<COMM2_LEN ; i++){ //clear array for new data
+                comm2_data[i] = 0;
+            }
+            if(HAL_UART_Receive(&hlpuart1, comm2_data, COMM2_LEN, 10000) == HAL_OK){ //wait for data received
                 //received data before timeout.
-                //todo: process data
-                uint8_t chksum = 0;
-                for(uint8_t n = 0 ; n<10 ; n++){
-                    chksum += comm2[n];
-                }
-                if(chksum != comm2[10]){
-                    //data is corupted
-                    hw_espPower(false); //turn power off
-                    g_esp_comms_active = false;
-                }
-                //todo: process data
+                //data is now transfered to array and can pe read by main logic (which checks for validity)
+                hw_espPower(false); //turn power off
+                g_esp_comms_active = false;
             }
             else{
                 //data was not received, end communication
                 hw_espPower(false); //turn power off
                 g_esp_comms_active = false;
             }
-
-
         }
     }
   /* USER CODE END esp_task_entry */
