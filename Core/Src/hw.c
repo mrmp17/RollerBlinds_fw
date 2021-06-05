@@ -452,6 +452,11 @@ bool g_request_rtc_refresh = false; //global rtc refresh request flag
 
 
 
+
+
+
+//checks comm2 frame validity (calculates and compares checksum)
+//chksum = (sumOfAllDataBytes)+1
 bool comm2_valid(uint8_t *comm2){
     uint8_t chksum = 0;
     for(uint8_t n = 0 ; n<COMM2_LEN-1 ; n++){
@@ -463,6 +468,18 @@ bool comm2_valid(uint8_t *comm2){
         return true;
     }
     else return false;
+}
+
+//checks if rtc refresh data is in com2 frame
+bool comm2_RtcRefreshIncluded(uint8_t *comm2){
+    return (comm2[7] != 255 && comm2[7] != 0); //checks if dateNowDate is not equal to 255 or 0
+}
+
+//returns data byte from comm2 frame. check validity before getting data!
+//use COMM2_****** defines from hw.h for dataPos
+//example comm2_getData(&comm2_data, COMM2_OPEN_HR)
+uint8_t comm2_getData(uint8_t *comm2, uint8_t dataPos){
+    return comm2[dataPos];
 }
 
 

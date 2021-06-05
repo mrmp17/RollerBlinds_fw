@@ -72,6 +72,17 @@ extern bool g_request_rtc_refresh; //global rtc time refresh request flag from h
 
 uint8_t comm2_data[COMM2_LEN] = {0}; //comm2 data array. filled by esp task, read by main logic task (misc task)
 
+//timetable structure for opening/closing times When times are received from esp, we write them in timetable
+//when action is preformed, clear from timetable (set to 255)
+struct Timetable{
+    uint8_t open_hr;
+    uint8_t open_min;
+    uint8_t close_hr;
+    uint8_t close_min;
+};
+struct Timetable timetable;
+
+
 
 
 
@@ -185,130 +196,7 @@ void misc_task_entry(void const * argument)
 {
   /* USER CODE BEGIN misc_task_entry */
     /* Infinite loop */
-    for (;;) {
 
-        //first run code
-        static uint8_t loopCtrl = 1;
-        while(loopCtrl){
-            hw_tmcPower(true);
-            switch(loopCtrl){
-                case 0:
-                    break;
-                case 1:
-                    //setting upper position. red led illuminated
-                    hw_redLed(true);
-                    hw_blueLed(false);
-                    if(hw_sw1()){
-                        tmc_commandVelocity(TMC_CRUISE_VEL); //jogging up
-                    }
-                    else if(hw_sw3()){
-                        tmc_commandVelocity(-TMC_CRUISE_VEL); //jogging down
-                    }
-                    else{
-                        tmc_commandVelocity(0);
-                    }
-                    if(hw_sw2()){
-                        //set position button.
-                        tmc_commandVelocity(0);
-                        loopCtrl = 2;
-                        g_up_pos = g_steps_abs;
-                        osDelay(500);
-                    }
-                    break;
-                case 2:
-                    //setting lower position. blue led illuminated
-                    hw_redLed(false);
-                    hw_blueLed(true);
-                    if(hw_sw1()){
-                        tmc_commandVelocity(TMC_CRUISE_VEL); //jogging up
-                    }
-                    else if(hw_sw3()){
-                        tmc_commandVelocity(-TMC_CRUISE_VEL); //jogging down
-                    }
-                    else{
-                        tmc_commandVelocity(0);
-                    }
-                    if(hw_sw2()){
-                        //set position button.
-                        tmc_commandVelocity(0);
-                        g_down_pos = g_steps_abs;
-                        //calibration finished, blink a few times
-                        hw_redLed(false);
-                        hw_blueLed(false);
-                        osDelay(100);
-                        hw_redLed(true);
-                        hw_blueLed(true);
-                        osDelay(100);
-                        hw_redLed(false);
-                        hw_blueLed(false);
-                        osDelay(100);
-                        hw_redLed(true);
-                        hw_blueLed(true);
-                        osDelay(100);
-                        hw_redLed(false);
-                        hw_blueLed(false);
-                        //calibration now finished, we can exit while loop by setting loopctrl to 0
-                        loopCtrl = 0;
-                    }
-            }
-
-        }
-        hw_tmcPower(false);
-
-        // ########## END OF STARTUP MANUAL POSITION CALIBRATION
-
-        //automatic RTC closing
-        if (1 && hw_getHour() == 21 && hw_getMinute() == 30 && hw_getSecond() < 20) {
-            //closing time
-            hw_tmcPower(true);
-            hw_tmcIoSply(true);
-            hw_redLed(true);
-            tmc_commandPosition(g_down_pos);
-            while (tmc_posCtrlActive());
-        }
-
-            //automatic RTC opening
-        else if (1 && hw_getHour() == 9 && hw_getMinute() == 5 && hw_getSecond() < 20) {
-            //opening time
-            hw_tmcPower(true);
-            hw_tmcIoSply(true);
-            hw_redLed(true);
-            tmc_commandPosition(g_up_pos);
-            while (tmc_posCtrlActive());
-        } else if (hw_sw1()) {
-            //gor
-            hw_tmcPower(true);
-            hw_tmcIoSply(true);
-            hw_redLed(true);
-            tmc_commandPosition(g_up_pos);
-            while (tmc_posCtrlActive());
-
-        } else if (hw_sw2()) {
-        } else if (hw_sw3()) {
-            //dol
-            hw_tmcPower(true);
-            hw_tmcIoSply(true);
-            hw_redLed(true);
-            tmc_commandPosition(g_down_pos);
-            while (tmc_posCtrlActive());
-
-        } else {
-
-        }
-
-        if (g_charging_flag) {
-            hw_blueLed(true);
-        } else {
-            hw_blueLed(false);
-            hw_redLed(false);
-            //osDelay(5000);
-            hw_sleep();
-            //hw_redLed(true);
-
-        }
-
-
-    }
   /* USER CODE END misc_task_entry */
 }
 
@@ -425,34 +313,140 @@ void main_logic_task_entry(void const * argument)
   /* USER CODE BEGIN main_logic_task_entry */
     /* Infinite loop */
     for (;;) {
-        osDelay(10);
-        uint32_t v1 = hw_getCell1Voltage();
-        uint32_t v2 = hw_getCell2Voltage();
-        uint32_t v3 = hw_getPackVoltage();
-        dump(v1);
-        dump(v2);
-        dump(v3);
 
-//    dbg_debugPrint("time\n");
-//    uint8_t cajt[6] = {0};
-//
-//    cajt[0] = hw_getDay();
-//    cajt[1] = hw_getMonth();
-//    cajt[2] = hw_getYear();
-//
-//    cajt[3] = hw_getHour();
-//    cajt[4] = hw_getMinute();
-//    cajt[5] = hw_getSecond();
-//
-//    uint32_t strom = hw_getCell1Voltage();
-//    dump(strom);
-//    dump(cajt[1]);
-//
-//    dbg_debugPrint("slp\n");
-//    osDelay(100);
-//    //hw_sleep();
-//    hw_redLed(true);
-//    dbg_debugPrint("wkp\n");
+        //first run code
+
+        //set timetable members to 255 (no valid open/close times)
+        timetable.close_hr = 255;
+        timetable.close_min = 255;
+        timetable.open_hr = 255;
+        timetable.open_min = 255;
+
+        static uint8_t loopCtrl = 1;
+        while(loopCtrl){
+            hw_tmcPower(true);
+            switch(loopCtrl){
+                case 0:
+                    break;
+                case 1:
+                    //setting upper position. red led illuminated
+                    hw_redLed(true);
+                    hw_blueLed(false);
+                    if(hw_sw1()){
+                        tmc_commandVelocity(TMC_CRUISE_VEL); //jogging up
+                    }
+                    else if(hw_sw3()){
+                        tmc_commandVelocity(-TMC_CRUISE_VEL); //jogging down
+                    }
+                    else{
+                        tmc_commandVelocity(0);
+                    }
+                    if(hw_sw2()){
+                        //set position button.
+                        tmc_commandVelocity(0);
+                        loopCtrl = 2;
+                        g_up_pos = g_steps_abs;
+                        osDelay(500);
+                    }
+                    break;
+                case 2:
+                    //setting lower position. blue led illuminated
+                    hw_redLed(false);
+                    hw_blueLed(true);
+                    if(hw_sw1()){
+                        tmc_commandVelocity(TMC_CRUISE_VEL); //jogging up
+                    }
+                    else if(hw_sw3()){
+                        tmc_commandVelocity(-TMC_CRUISE_VEL); //jogging down
+                    }
+                    else{
+                        tmc_commandVelocity(0);
+                    }
+                    if(hw_sw2()){
+                        //set position button.
+                        tmc_commandVelocity(0);
+                        g_down_pos = g_steps_abs;
+                        //calibration finished, blink a few times
+                        hw_redLed(false);
+                        hw_blueLed(false);
+                        osDelay(100);
+                        hw_redLed(true);
+                        hw_blueLed(true);
+                        osDelay(100);
+                        hw_redLed(false);
+                        hw_blueLed(false);
+                        osDelay(100);
+                        hw_redLed(true);
+                        hw_blueLed(true);
+                        osDelay(100);
+                        hw_redLed(false);
+                        hw_blueLed(false);
+                        //calibration now finished, we can exit while loop by setting loopctrl to 0
+                        loopCtrl = 0;
+                    }
+            }
+
+        }
+        hw_tmcPower(false);
+
+        // ########## END OF STARTUP MANUAL POSITION CALIBRATION
+
+        //main logic loop
+        while(true){
+            //automatic RTC closing
+            if (1 && hw_getHour() == 21 && hw_getMinute() == 30 && hw_getSecond() < 20) {
+                //closing time
+                hw_tmcPower(true);
+                hw_tmcIoSply(true);
+                hw_redLed(true);
+                tmc_commandPosition(g_down_pos);
+                while (tmc_posCtrlActive());
+            }
+
+                //automatic RTC opening
+            else if (1 && hw_getHour() == 9 && hw_getMinute() == 5 && hw_getSecond() < 20) {
+                //opening time
+                hw_tmcPower(true);
+                hw_tmcIoSply(true);
+                hw_redLed(true);
+                tmc_commandPosition(g_up_pos);
+                while (tmc_posCtrlActive());
+            } else if (hw_sw1()) {
+                //gor
+                hw_tmcPower(true);
+                hw_tmcIoSply(true);
+                hw_redLed(true);
+                tmc_commandPosition(g_up_pos);
+                while (tmc_posCtrlActive());
+
+            } else if (hw_sw2()) {
+            } else if (hw_sw3()) {
+                //dol
+                hw_tmcPower(true);
+                hw_tmcIoSply(true);
+                hw_redLed(true);
+                tmc_commandPosition(g_down_pos);
+                while (tmc_posCtrlActive());
+
+            } else {
+
+            }
+
+            if (g_charging_flag) {
+                hw_blueLed(true);
+            } else {
+                hw_blueLed(false);
+                hw_redLed(false);
+                //osDelay(5000);
+                hw_sleep();
+                //hw_redLed(true);
+
+            }
+        }
+
+
+
+
     }
   /* USER CODE END main_logic_task_entry */
 }

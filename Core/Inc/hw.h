@@ -126,17 +126,20 @@ void hw_setRtcFromCompileTime();
 
 bool comm2_valid(uint8_t *comm2);
 bool comm2_RtcRefreshIncluded(uint8_t *comm2);
-uint8_t comm2_getOpenHr(uint8_t *comm2);
-uint8_t comm2_getOpenMin(uint8_t *comm2);
-uint8_t comm2_getCloseHr(uint8_t *comm2);
-uint8_t comm2_getCloseMin(uint8_t *comm2);
 
-uint8_t comm2_getRtcRefreshHr(uint8_t *comm2);
-uint8_t comm2_getRtcRefreshMin(uint8_t *comm2);
-uint8_t comm2_getRtcRefreshSec(uint8_t *comm2);
-uint8_t comm2_getRtcRefreshDate(uint8_t *comm2);
-uint8_t comm2_getRtcRefreshMonth(uint8_t *comm2);
-uint8_t comm2_getRtcRefreshYear(uint8_t *comm2);
+#define COMM2_OPEN_HR 0
+#define COMM2_OPEN_MIN 1
+#define COMM2_CLOSE_HR 2
+#define COMM2_CLOSE_MIN 3
+#define COMM2_RTC_REFRESH_HR 4
+#define COMM2_RTC_REFRESH_MIN 5
+#define COMM2_RTC_REFRESH_SEC 6
+#define COMM2_RTC_REFRESH_DATE 7
+#define COMM2_RTC_REFRESH_MONTH 8
+#define COMM2_RTC_REFRESH_YEAR 9
+
+uint8_t comm2_getData(uint8_t *comm2, uint8_t dataPos);
+
 
 
 
