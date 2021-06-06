@@ -484,6 +484,24 @@ uint8_t comm2_getData(uint8_t *comm2, uint8_t dataPos){
 
 
 
+//gets battery state of charge. 0 means low battery and should enter low power state
+uint8_t getSoc(){
+    static uint8_t soc = 50;
+
+    if(hw_getPackVoltage() < 6000){
+        soc = 0;
+    }
+    else if(soc == 0 && hw_getPackVoltage() < 6400){
+        //dead battry hysteresis
+        soc = 0;
+    }
+    else{
+        soc = (uint8_t)(hw_getPackVoltage()-6000)*(100.0/(8400-6000)); //linear approximation soc. not very accurate. close enough
+    }
+}
+
+
+
 
 
 

@@ -73,7 +73,6 @@ extern bool g_request_rtc_refresh; //global rtc time refresh request flag from h
 uint8_t comm2_data[COMM2_LEN] = {0}; //comm2 data array. filled by esp task, read by main logic task (misc task)
 
 //timetable structure for opening/closing times When times are received from esp, we write them in timetable
-//when action is preformed, clear from timetable (set to 255)
 struct Timetable{
     uint8_t open_hr;
     uint8_t open_min;
@@ -362,6 +361,9 @@ void main_logic_task_entry(void const * argument)
                     else{
                         tmc_commandVelocity(0);
                     }
+
+                    //todo: get time for rtc refresh
+
                     if(hw_sw2()){
                         //set position button.
                         tmc_commandVelocity(0);
@@ -391,7 +393,28 @@ void main_logic_task_entry(void const * argument)
 
         // ########## END OF STARTUP MANUAL POSITION CALIBRATION
 
+        //plan for main logic:
+        //do stuff and sleep at the end of every while cycle
+        //for low battery, dont cycle the loop unless charged enough (sleep in a sepparate loop)
+        //on wake up, check:
+        //low battery?
+        //charging?
+        //button presses - manual open/close?
+        //time to auto open/close?
+        //time to refresh rtc?
+        // nope? go back to sleep
+
+        //if charging or low battery, go to a nested loop, stay there until conditions no longer true
+
+
+
         //main logic loop
+
+        while(1){
+
+        }
+
+        //testing control logic
         while(true){
             //automatic RTC closing
             if (1 && hw_getHour() == 21 && hw_getMinute() == 30 && hw_getSecond() < 20) {
@@ -411,7 +434,8 @@ void main_logic_task_entry(void const * argument)
                 hw_redLed(true);
                 tmc_commandPosition(g_up_pos);
                 while (tmc_posCtrlActive());
-            } else if (hw_sw1()) {
+            }
+            else if (hw_sw1()) {
                 //gor
                 hw_tmcPower(true);
                 hw_tmcIoSply(true);
@@ -419,8 +443,10 @@ void main_logic_task_entry(void const * argument)
                 tmc_commandPosition(g_up_pos);
                 while (tmc_posCtrlActive());
 
-            } else if (hw_sw2()) {
-            } else if (hw_sw3()) {
+            }
+            else if (hw_sw2()) {
+            }
+            else if (hw_sw3()) {
                 //dol
                 hw_tmcPower(true);
                 hw_tmcIoSply(true);
@@ -476,7 +502,7 @@ void esp_task_entry(void const * argument)
 
         //all frames are arrays of bytes (fixed length)
 
-        // COMM1 frame: [bStatus, bBatteryPercent, bRequestTimeRefresh] len=3
+        // COMM1 frame: [bStatus, bBatteryPercent, bBatteryDelta, bOpenHr, bOpenMin, bCloseHr, bCloseMin, bRequestTimeRefresh, bSum] len=9
         // COMM2 frame: [bOpenHr, bOpenMin, bCloseHr, bCloseMin, bTimeNowHr, bTimeNowMin, bTimeNowSec, bDateNowDate, bDateNowMonth, bDateNowYear, bSum] len=11
 
         //sum is cheksup byte. sum of all previous bytes + 1 (with normal uintt8_t overflow)
@@ -486,7 +512,13 @@ void esp_task_entry(void const * argument)
             //main logic comanded
             hw_espPower(true); //enable esp power
             osDelay(100); //wait for esp to wake up and start running
-            uint8_t comm1[COMM1_LEN] = {g_status, g_SoC, g_request_rtc_refresh};
+
+            uint8_t comm1[COMM1_LEN] = {g_status, g_SoC, abs((int32_t)hw_getCell2Voltage()-(int32_t)hw_getCell1Voltage()), timetable.open_hr, timetable.open_min, timetable.close_hr, timetable.close_min, g_request_rtc_refresh, 0};
+            uint8_t checksum = 0;
+            for(uint8_t n = 0 ; n<COMM1_LEN ; n++){ //calculate checksum
+                checksum += comm1[n];
+            }
+            comm1[COMM1_LEN-1] = checksum;
             HAL_UART_Transmit(&hlpuart1, comm1, COMM1_LEN, 100); //transmit first frame
             for(uint8_t i = 0 ; i<COMM2_LEN ; i++){ //clear array for new data
                 comm2_data[i] = 0;

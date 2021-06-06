@@ -76,6 +76,7 @@ uint32_t hw_getCell1Voltage();
 uint32_t hw_getCell2Voltage();
 uint32_t hw_getPackVoltage();
 uint32_t hw_getVbusVoltage();
+uint8_t hw_getSoc();
 //#####################################
 
 //############ STEPPER POSITIONING FUNCTIONS ##########
@@ -121,7 +122,7 @@ void hw_setRtcFromCompileTime();
 //#######################################################
 
 //######################### ESP COMMS ###################
-#define COMM1_LEN 3 //see esp comms description in esp task
+#define COMM1_LEN 9 //see esp comms description in esp task
 #define COMM2_LEN 11 //see esp comms description in esp task
 
 bool comm2_valid(uint8_t *comm2);
