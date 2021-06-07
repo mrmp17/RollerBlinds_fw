@@ -69,6 +69,9 @@ bool hw_vbusPresent();
 #define BAT_FULL_CHRG_THR 4150
 #define VBUS_PRESENT_THR 4000
 
+#define STATUS_BAT_DEAD 33
+
+
 
 void hw_adcStart();
 void hw_adcStop();
@@ -125,6 +128,8 @@ void hw_setRtcFromCompileTime();
 #define COMM1_LEN 9 //see esp comms description in esp task
 #define COMM2_LEN 11 //see esp comms description in esp task
 
+#define ESP_DATARECV_TIMEOUT 10000
+
 bool comm2_valid(uint8_t *comm2);
 bool comm2_RtcRefreshIncluded(uint8_t *comm2);
 
@@ -140,6 +145,8 @@ bool comm2_RtcRefreshIncluded(uint8_t *comm2);
 #define COMM2_RTC_REFRESH_YEAR 9
 
 uint8_t comm2_getData(uint8_t *comm2, uint8_t dataPos);
+
+void hw_setRtcFromComm2(uint8_t *comm2);
 
 
 

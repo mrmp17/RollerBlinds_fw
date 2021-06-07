@@ -482,10 +482,16 @@ uint8_t comm2_getData(uint8_t *comm2, uint8_t dataPos){
     return comm2[dataPos];
 }
 
+//sets rtc from bytes from comm2 frame. CHECK VALIDITY OF RTC DATA BEFORE THIS!!
+void hw_setRtcFromComm2(uint8_t *comm2){
+    hw_setRtcTime(comm2_getData(comm2, COMM2_RTC_REFRESH_HR), comm2_getData(comm2, COMM2_RTC_REFRESH_MIN), comm2_getData(comm2, COMM2_RTC_REFRESH_SEC));
+    hw_setRtcDate(comm2_getData(comm2, COMM2_RTC_REFRESH_DATE), comm2_getData(comm2, COMM2_RTC_REFRESH_DATE), comm2_getData(comm2, COMM2_RTC_REFRESH_DATE));
+}
+
 
 
 //gets battery state of charge. 0 means low battery and should enter low power state
-uint8_t getSoc(){
+uint8_t hw_getSoc(){
     static uint8_t soc = 50;
 
     if(hw_getPackVoltage() < 6000){

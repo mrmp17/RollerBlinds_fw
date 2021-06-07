@@ -68,6 +68,10 @@ extern uint8_t g_SoC; //global battery state of charge variable from hw.c
 extern uint8_t g_status; //global status code (indicates open/close status and errors) from hw.c
 extern bool g_request_rtc_refresh; //global rtc time refresh request flag from hw.c
 
+// 0: unknown
+// 1: up
+// 2: down
+uint8_t g_blinds_position = 0;
 
 
 uint8_t comm2_data[COMM2_LEN] = {0}; //comm2 data array. filled by esp task, read by main logic task (misc task)
@@ -321,8 +325,29 @@ void main_logic_task_entry(void const * argument)
         timetable.open_hr = 255;
         timetable.open_min = 255;
 
+        //first thing to do: set rtc from wifi
+        hw_blueLed(true);
+        //set rtc time from wifi. tries again if failed. sw cant start if this is not ok.
+        //bool rtcok = false;
+        bool rtcok = true; //todo: this is set to true to disable rtc time refresh on startup
+        hw_redLed(true);
+        while(!rtcok){
+            g_request_rtc_refresh = true; //request rtc refresh
+            g_esp_comms_active = true; //start comms with esp
+            while(g_esp_comms_active);
+            if(comm2_valid(comm2_data) && comm2_RtcRefreshIncluded(comm2_data)){
+                hw_setRtcFromComm2(comm2_data);
+                rtcok = true;
+            }
+            else{
+                rtcok = false;
+            }
+        }
+        hw_blueLed(false);
+
         static uint8_t loopCtrl = 1;
         while(loopCtrl){
+
             hw_tmcPower(true);
             switch(loopCtrl){
                 case 0:
@@ -362,7 +387,7 @@ void main_logic_task_entry(void const * argument)
                         tmc_commandVelocity(0);
                     }
 
-                    //todo: get time for rtc refresh
+                    hw_redLed(false);
 
                     if(hw_sw2()){
                         //set position button.
@@ -411,7 +436,42 @@ void main_logic_task_entry(void const * argument)
         //main logic loop
 
         while(1){
+            //just woken up:
 
+            //check if battery is dead
+            while(hw_getSoc() == 0){
+                g_status = STATUS_BAT_DEAD;
+                hw_sleep();
+                //todo: send error to wifi modem once
+            }
+
+            //check if charging
+            while(hw_vbusPresent()){
+                if(hw_getSoc() >= 90){
+                    hw_blueLed(true);
+                    hw_redLed(false);
+                }
+                else{
+                    hw_blueLed(false);
+                    hw_redLed(true);
+                }
+            }
+            hw_blueLed(false);
+            hw_redLed(false);
+
+
+            //buttons pressed?
+            if(hw_sw1()){
+                tmc_commandPosition(g_up_pos);
+                while (tmc_posCtrlActive());
+            }
+            else if(hw_sw2()){
+                tmc_commandPosition(g_down_pos);
+                while (tmc_posCtrlActive());
+            }
+
+            //do stuff
+            hw_sleep();
         }
 
         //testing control logic
@@ -523,7 +583,7 @@ void esp_task_entry(void const * argument)
             for(uint8_t i = 0 ; i<COMM2_LEN ; i++){ //clear array for new data
                 comm2_data[i] = 0;
             }
-            if(HAL_UART_Receive(&hlpuart1, comm2_data, COMM2_LEN, 10000) == HAL_OK){ //wait for data received
+            if(HAL_UART_Receive(&hlpuart1, comm2_data, COMM2_LEN, ESP_DATARECV_TIMEOUT) == HAL_OK){ //wait for data received
                 //received data before timeout.
                 //data is now transfered to array and can pe read by main logic (which checks for validity)
                 hw_espPower(false); //turn power off
