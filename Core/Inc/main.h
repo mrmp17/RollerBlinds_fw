@@ -84,10 +84,13 @@ void Error_Handler(void);
 #define ESP_PWR_CTRL_GPIO_Port GPIOB
 #define SW_3_Pin GPIO_PIN_14
 #define SW_3_GPIO_Port GPIOB
+#define SW_3_EXTI_IRQn EXTI4_15_IRQn
 #define SW_2_Pin GPIO_PIN_15
 #define SW_2_GPIO_Port GPIOB
+#define SW_2_EXTI_IRQn EXTI4_15_IRQn
 #define SW_1_Pin GPIO_PIN_8
 #define SW_1_GPIO_Port GPIOA
+#define SW_1_EXTI_IRQn EXTI4_15_IRQn
 #define BAL2_Pin GPIO_PIN_11
 #define BAL2_GPIO_Port GPIOA
 #define BAL1_Pin GPIO_PIN_12

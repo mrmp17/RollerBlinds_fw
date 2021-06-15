@@ -472,7 +472,7 @@ void main_logic_task_entry(void const * argument)
 
 
             //buttons pressed?
-            if(hw_sw1()){
+            if(hw_sw1() && g_blinds_position != G_POS_UP){
                 tmc_commandPosition(g_up_pos);
                 hw_tmcPower(true);
                 hw_tmcIoSply(true);
@@ -488,7 +488,7 @@ void main_logic_task_entry(void const * argument)
                 hw_tmcPower(false);
                 hw_tmcIoSply(false);
             }
-            else if(hw_sw3()){
+            else if(hw_sw3() && g_blinds_position != G_POS_DOWN){
                 hw_tmcPower(true);
                 hw_tmcIoSply(true);
                 osDelay(100);
