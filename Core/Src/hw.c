@@ -513,8 +513,9 @@ uint8_t hw_getSoc(){
         soc = 0;
     }
     else{
-        soc = (uint8_t)(hw_getPackVoltage()-6000)*(100.0/(8400-6000)); //linear approximation soc. not very accurate. close enough
+        soc = (uint8_t)((hw_getPackVoltage()-6000.0)*(100.0/(8400.0-6000.0))); //linear approximation soc. not very accurate. close enough
     }
+    return soc;
 }
 
 

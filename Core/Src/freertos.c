@@ -453,9 +453,9 @@ void main_logic_task_entry(void const * argument)
             }
 
             //check if charging. inhibit sleep and enable leds if it is
-            if(hw_vbusPresent()){
+            if(g_charging_flag){
                 hw_inhibitSleep(true);
-                if(hw_getSoc() >= 90){
+                if(g_fully_charged_flag){
                     hw_blueLed(true);
                     hw_redLed(false);
                 }
@@ -506,6 +506,7 @@ void main_logic_task_entry(void const * argument)
             }
 
             //todo: automatic opening closing, rtc refresh
+
 
             //set g_blinds_position
             if(abs(g_steps_abs-g_up_pos)<POS_CLOSE_ENOUGH) g_blinds_position = G_POS_UP;
