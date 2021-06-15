@@ -424,6 +424,17 @@ bool hw_gpioConfigForAwake(){
     MX_GPIO_Init();
 }
 
+uint8_t g_inhibit_sleep = false; //global inhibit sleep flag. Keeps looping, doesnt sleep
+//inhibit sleep. all calls in one loop must agree that inhibit is not needed. call hw_inhibitSleepReset() at the top while loop
+void hw_inhibitSleep(bool state){
+    if(!g_inhibit_sleep && state){ //inhibit not yet set
+        g_inhibit_sleep = true;
+    }
+}
+void hw_inhibitSleepReset(){
+    g_inhibit_sleep = false;
+}
+
 //sets rtc time and date from compile time in __TIME__
 //todo: implement date
 void hw_setRtcFromCompileTime(){

@@ -66,22 +66,25 @@ extern bool g_esp_comms_active; //global esp comms active flag from hw.c
 
 extern uint8_t g_SoC; //global battery state of charge variable from hw.c
 extern uint8_t g_status; //global status code (indicates open/close status and errors) from hw.c
-extern bool g_request_rtc_refresh; //global rtc time refresh request flag from hw.c
+extern bool g_request_rtc_refresh; //global rtc time refresh request flag from hw.c. if rtc refresh ok, esp_task resets this to 0
 
 // 0: unknown
 // 1: up
 // 2: down
 uint8_t g_blinds_position = 0;
 
-
-uint8_t comm2_data[COMM2_LEN] = {0}; //comm2 data array. filled by esp task, read by main logic task (misc task)
+extern uint8_t g_inhibit_sleep; //global inhibit sleep flag. Keeps looping, doesnt sleep
+bool g_esp_data_ok = false; //indicates esp got data (and updated timetable if new times arrived)
 
 //timetable structure for opening/closing times When times are received from esp, we write them in timetable
+//also for rtc refresh scheduled time
 struct Timetable{
     uint8_t open_hr;
     uint8_t open_min;
     uint8_t close_hr;
     uint8_t close_min;
+    uint8_t rtc_refresh_day;
+    uint8_t rtc_refresh_hour;
 };
 struct Timetable timetable;
 
@@ -199,6 +202,7 @@ void misc_task_entry(void const * argument)
 {
   /* USER CODE BEGIN misc_task_entry */
     /* Infinite loop */
+    while(1);
 
   /* USER CODE END misc_task_entry */
 }
@@ -335,13 +339,13 @@ void main_logic_task_entry(void const * argument)
             g_request_rtc_refresh = true; //request rtc refresh
             g_esp_comms_active = true; //start comms with esp
             while(g_esp_comms_active);
-            if(comm2_valid(comm2_data) && comm2_RtcRefreshIncluded(comm2_data)){
-                hw_setRtcFromComm2(comm2_data);
+            if(g_esp_data_ok && !g_request_rtc_refresh){
                 rtcok = true;
             }
             else{
                 rtcok = false;
             }
+
         }
         hw_blueLed(false);
 
@@ -349,6 +353,7 @@ void main_logic_task_entry(void const * argument)
         while(loopCtrl){
 
             hw_tmcPower(true);
+            hw_tmcIoSply(true);
             switch(loopCtrl){
                 case 0:
                     break;
@@ -414,6 +419,7 @@ void main_logic_task_entry(void const * argument)
             }
 
         }
+        hw_tmcIoSply(false);
         hw_tmcPower(false);
 
         // ########## END OF STARTUP MANUAL POSITION CALIBRATION
@@ -429,7 +435,7 @@ void main_logic_task_entry(void const * argument)
         //time to refresh rtc?
         // nope? go back to sleep
 
-        //if charging or low battery, go to a nested loop, stay there until conditions no longer true
+        //if low battery, go to a nested loop, stay there until conditions no longer true
 
 
 
@@ -437,6 +443,7 @@ void main_logic_task_entry(void const * argument)
 
         while(1){
             //just woken up:
+            hw_inhibitSleepReset();
 
             //check if battery is dead
             while(hw_getSoc() == 0){
@@ -445,8 +452,9 @@ void main_logic_task_entry(void const * argument)
                 //todo: send error to wifi modem once
             }
 
-            //check if charging
-            while(hw_vbusPresent()){
+            //check if charging. inhibit sleep and enable leds if it is
+            if(hw_vbusPresent()){
+                hw_inhibitSleep(true);
                 if(hw_getSoc() >= 90){
                     hw_blueLed(true);
                     hw_redLed(false);
@@ -456,22 +464,67 @@ void main_logic_task_entry(void const * argument)
                     hw_redLed(true);
                 }
             }
-            hw_blueLed(false);
-            hw_redLed(false);
+            else{
+                hw_inhibitSleep(false);
+                hw_blueLed(false);
+                hw_redLed(false);
+            }
 
 
             //buttons pressed?
             if(hw_sw1()){
                 tmc_commandPosition(g_up_pos);
-                while (tmc_posCtrlActive());
+                hw_tmcPower(true);
+                hw_tmcIoSply(true);
+                osDelay(100);
+                while (tmc_posCtrlActive()){
+                    if(hw_sw3()){
+                        tmc_commandPosition(g_down_pos);
+                    }
+                    else if(hw_sw1()){
+                        tmc_commandPosition(g_up_pos);
+                    }
+                }
+                hw_tmcPower(false);
+                hw_tmcIoSply(false);
             }
-            else if(hw_sw2()){
+            else if(hw_sw3()){
+                hw_tmcPower(true);
+                hw_tmcIoSply(true);
+                osDelay(100);
                 tmc_commandPosition(g_down_pos);
-                while (tmc_posCtrlActive());
+                while (tmc_posCtrlActive()){
+                    if(hw_sw3()){
+                        tmc_commandPosition(g_down_pos);
+                    }
+                    else if(hw_sw1()){
+                        tmc_commandPosition(g_up_pos);
+                    }
+                }
+                hw_tmcPower(false);
+                hw_tmcIoSply(false);
             }
 
-            //do stuff
-            hw_sleep();
+            //todo: automatic opening closing, rtc refresh
+
+            //set g_blinds_position
+            if(abs(g_steps_abs-g_up_pos)<POS_CLOSE_ENOUGH) g_blinds_position = G_POS_UP;
+            else if(abs(g_steps_abs-g_down_pos)<POS_CLOSE_ENOUGH) g_blinds_position = G_POS_DOWN;
+            else g_blinds_position = G_POS_UNKNOWN;
+
+            if(hw_getMinute() == 30){
+                //todo: time to update timetable
+            }
+
+            if(hw_getDay() == timetable.rtc_refresh_day && hw_getHour() == timetable.rtc_refresh_hour){
+                //todo: time to refresh RTC time
+            }
+
+
+            if(!g_inhibit_sleep){
+                hw_sleep();
+                //osDelay(5000);
+            }
         }
 
         //testing control logic
@@ -563,12 +616,15 @@ void esp_task_entry(void const * argument)
         //all frames are arrays of bytes (fixed length)
 
         // COMM1 frame: [bStatus, bBatteryPercent, bBatteryDelta, bOpenHr, bOpenMin, bCloseHr, bCloseMin, bRequestTimeRefresh, bSum] len=9
-        // COMM2 frame: [bOpenHr, bOpenMin, bCloseHr, bCloseMin, bTimeNowHr, bTimeNowMin, bTimeNowSec, bDateNowDate, bDateNowMonth, bDateNowYear, bSum] len=11
+        // COMM2 frame: [bOpenHr, bOpenMin, bCloseHr, bCloseMin, bTimeNowHr, bTimeNowMin, bTimeNowSec, bDateNowDate, bDateNowMonth, bDateNowYear, bNewTimes, bSum] len=12
 
         //sum is cheksup byte. sum of all previous bytes + 1 (with normal uintt8_t overflow)
         // if time values not available or requested set bytes to 0xFF
+        //if new  open/close times from homeAssistant, set bNewTimes
 
         if(g_esp_comms_active){
+            g_esp_data_ok = false;
+            uint8_t comm2_data[COMM2_LEN] = {0};
             //main logic comanded
             hw_espPower(true); //enable esp power
             osDelay(100); //wait for esp to wake up and start running
@@ -588,6 +644,21 @@ void esp_task_entry(void const * argument)
                 //data is now transfered to array and can pe read by main logic (which checks for validity)
                 hw_espPower(false); //turn power off
                 g_esp_comms_active = false;
+                //transfer data to timetable structure
+                if(comm2_valid(comm2_data)){
+                    //transfer timetable data
+                    if(comm2_getData(comm2_data, COMM2_NEW_TIMES) == 1){
+                        timetable.open_hr = comm2_getData(comm2_data, COMM2_OPEN_HR);
+                        timetable.open_min = comm2_getData(comm2_data, COMM2_OPEN_MIN);
+                        timetable.close_hr = comm2_getData(comm2_data, COMM2_CLOSE_HR);
+                        timetable.close_min = comm2_getData(comm2_data, COMM2_CLOSE_MIN);
+                    }
+                    g_esp_data_ok = true;
+                    if(comm2_RtcRefreshIncluded(comm2_data)){
+                        hw_setRtcFromComm2(comm2_data);
+                        g_request_rtc_refresh = false; //reset to let main logic know that rtc refresh successfull
+                    }
+                }
             }
             else{
                 //data was not received, end communication
