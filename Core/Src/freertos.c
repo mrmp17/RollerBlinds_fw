@@ -626,6 +626,7 @@ void main_logic_task_entry(void const * argument)
             else g_blinds_position = G_POS_UNKNOWN;
 
             if(!g_inhibit_sleep){
+                osDelay(10); //allow some time for other tasks
                 hw_sleep();
                 //osDelay(5000);
             }
