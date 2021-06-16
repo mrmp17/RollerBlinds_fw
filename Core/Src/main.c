@@ -107,8 +107,6 @@ int main(void)
   hw_blueLed(true);
   HAL_Delay(500);
 
-  //hw_tmcPower(true);
-  hw_tmcIoSply(true);
   hw_redLed(true);
   hw_blueLed(false);
   HAL_Delay(500);
@@ -118,13 +116,16 @@ int main(void)
   hw_blueLed(true);
   HAL_Delay(500);
   hw_blueLed(false);
-  hw_adcStart();
-  //tmc_startStepGen();
+  hw_redLed(false);
 
-  hw_setRtcTime(21, 33, 19);
+  hw_adcStart(); //start adc
+
+  //set initial RTC date. updates from wifi at first run
+  hw_setRtcTime(12, 0, 0);
   hw_setRtcDate(28, 5, 21);
 
 
+  //wait to allow debbugging after reset
   HAL_Delay(5000);
 
   /* USER CODE END 2 */
@@ -137,18 +138,8 @@ int main(void)
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-    //__HAL_TIM_SET_AUTORELOAD(&htim2, 200);
-    //__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 20);
-
-
-    //tmc_setSpS(10000);
 
   while (1){
-
-
-
-
-      
 
 
     /* USER CODE END WHILE */

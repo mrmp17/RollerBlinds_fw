@@ -78,13 +78,18 @@ bool g_esp_data_ok = false; //indicates esp got data (and updated timetable if n
 
 //timetable structure for opening/closing times When times are received from esp, we write them in timetable
 //also for rtc refresh scheduled time
+//set done flag when action finished, reset one minute later (prevents repeated triggering)
 struct Timetable{
     uint8_t open_hr;
     uint8_t open_min;
     uint8_t close_hr;
     uint8_t close_min;
+    bool open_done;
+    bool close_done;
     uint8_t rtc_refresh_day;
-    uint8_t rtc_refresh_hour;
+    bool rtc_done;
+    uint8_t timetable_refresh_minute;
+    bool timetable_refresh_done;
 };
 struct Timetable timetable;
 
@@ -328,13 +333,30 @@ void main_logic_task_entry(void const * argument)
         timetable.close_min = 255;
         timetable.open_hr = 255;
         timetable.open_min = 255;
+        timetable.open_done = false;
+        timetable.rtc_refresh_day = 15; //refresh rtc every 15th day of the month
+        timetable.rtc_done = false;
+        timetable.timetable_refresh_minute = 30; //refresh timetable every hour at min 30
+        timetable.timetable_refresh_done = false;
+
+//        //set timetable members to 255 (no valid open/close times)
+//        timetable.close_hr = 12;
+//        timetable.close_min = 04;
+//        timetable.open_hr = 12;
+//        timetable.open_min = 02;
+//        timetable.open_done = false;
+//        timetable.rtc_refresh_day = 15;
+//        timetable.rtc_done = false;
+//        timetable.timetable_refresh_minute = 30;
+//        timetable.timetable_refresh_done = false;
+
+
 
         //first thing to do: set rtc from wifi
         hw_blueLed(true);
         //set rtc time from wifi. tries again if failed. sw cant start if this is not ok.
         //bool rtcok = false;
         bool rtcok = true; //todo: this is set to true to disable rtc time refresh on startup
-        hw_redLed(true);
         while(!rtcok){
             g_request_rtc_refresh = true; //request rtc refresh
             g_esp_comms_active = true; //start comms with esp
@@ -348,7 +370,7 @@ void main_logic_task_entry(void const * argument)
 
         }
         hw_blueLed(false);
-
+        hw_redLed(true);
         static uint8_t loopCtrl = 1;
         while(loopCtrl){
 
@@ -446,10 +468,16 @@ void main_logic_task_entry(void const * argument)
             hw_inhibitSleepReset();
 
             //check if battery is dead
+            bool firstBatDead = true;
             while(hw_getSoc() == 0){
                 g_status = STATUS_BAT_DEAD;
+                if(firstBatDead){ //send status to esp once when enetering low bat
+                    g_request_rtc_refresh = false;
+                    g_esp_comms_active = true;
+                    while(g_esp_comms_active);
+                    firstBatDead = false;
+                }
                 hw_sleep();
-                //todo: send error to wifi modem once
             }
 
             //check if charging. inhibit sleep and enable leds if it is
@@ -473,10 +501,10 @@ void main_logic_task_entry(void const * argument)
 
             //buttons pressed?
             if(hw_sw1() && g_blinds_position != G_POS_UP){
-                tmc_commandPosition(g_up_pos);
                 hw_tmcPower(true);
                 hw_tmcIoSply(true);
                 osDelay(100);
+                tmc_commandPosition(g_up_pos);
                 while (tmc_posCtrlActive()){
                     if(hw_sw3()){
                         tmc_commandPosition(g_down_pos);
@@ -505,22 +533,97 @@ void main_logic_task_entry(void const * argument)
                 hw_tmcIoSply(false);
             }
 
-            //todo: automatic opening closing, rtc refresh
+            //automatic RTC opening, closing
 
+            //open
+            if(hw_getHour() == timetable.open_hr && hw_getMinute() == timetable.open_min && !timetable.open_done && g_blinds_position != G_POS_UP){
+                hw_tmcPower(true);
+                hw_tmcIoSply(true);
+                osDelay(100);
+                tmc_commandPosition(g_up_pos);
+                while (tmc_posCtrlActive()){
+                    if(hw_sw3()){
+                        tmc_commandPosition(g_down_pos);
+                    }
+                    else if(hw_sw1()){
+                        tmc_commandPosition(g_up_pos);
+                    }
+                }
+                hw_tmcPower(false);
+                hw_tmcIoSply(false);
+                timetable.open_done = true;
+            }
+
+            //close
+            if(hw_getHour() == timetable.close_hr && hw_getMinute() == timetable.close_min && !timetable.close_done && g_blinds_position != G_POS_DOWN){
+                hw_tmcPower(true);
+                hw_tmcIoSply(true);
+                osDelay(100);
+                tmc_commandPosition(g_down_pos);
+                while (tmc_posCtrlActive()){
+                    if(hw_sw3()){
+                        tmc_commandPosition(g_down_pos);
+                    }
+                    else if(hw_sw1()){
+                        tmc_commandPosition(g_up_pos);
+                    }
+                }
+                hw_tmcPower(false);
+                hw_tmcIoSply(false);
+                timetable.close_done = true;
+            }
+
+            //reset close_done flag
+            if(timetable.close_done){
+                if(hw_getMinute() != timetable.close_min){
+                    timetable.close_done = false;
+                }
+            }
+            //reset open_done flag
+            if(timetable.open_done){
+                if(hw_getMinute() != timetable.open_min){
+                    timetable.open_done = false;
+                }
+            }
+
+
+            if(hw_getMinute() == timetable.timetable_refresh_minute && !timetable.timetable_refresh_done){
+                g_request_rtc_refresh = true; //request rtc refresh
+                g_esp_comms_active = true; //trigger comms
+                timetable.timetable_refresh_done  = true;
+            }
+
+            if(hw_getDay() == timetable.rtc_refresh_day && !timetable.rtc_done){
+                g_request_rtc_refresh = false; //not needed here
+                g_esp_comms_active = true; //triger comms
+                timetable.rtc_done = true;
+            }
+
+            //reset timetable refresh done flag
+            if(timetable.timetable_refresh_done){
+                if(hw_getMinute() != timetable.timetable_refresh_done){
+                    timetable.timetable_refresh_done = false;
+                }
+            }
+            //reset rtc refresh done flag
+            if(timetable.rtc_done){
+                if(hw_getMinute() != timetable.rtc_refresh_day){
+                    timetable.rtc_done = false;
+                }
+            }
+
+            //request sleep inhibit if esp comms active
+            if(g_esp_comms_active){
+                hw_inhibitSleep(true);
+            }
+            else{
+                hw_inhibitSleep(false);
+            }
 
             //set g_blinds_position
             if(abs(g_steps_abs-g_up_pos)<POS_CLOSE_ENOUGH) g_blinds_position = G_POS_UP;
             else if(abs(g_steps_abs-g_down_pos)<POS_CLOSE_ENOUGH) g_blinds_position = G_POS_DOWN;
             else g_blinds_position = G_POS_UNKNOWN;
-
-            if(hw_getMinute() == 30){
-                //todo: time to update timetable
-            }
-
-            if(hw_getDay() == timetable.rtc_refresh_day && hw_getHour() == timetable.rtc_refresh_hour){
-                //todo: time to refresh RTC time
-            }
-
 
             if(!g_inhibit_sleep){
                 hw_sleep();
