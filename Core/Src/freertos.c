@@ -601,13 +601,13 @@ void main_logic_task_entry(void const * argument)
 
             //reset timetable refresh done flag
             if(timetable.timetable_refresh_done){
-                if(hw_getMinute() != timetable.timetable_refresh_done){
+                if(hw_getMinute() != timetable.timetable_refresh_minute){
                     timetable.timetable_refresh_done = false;
                 }
             }
             //reset rtc refresh done flag
             if(timetable.rtc_done){
-                if(hw_getMinute() != timetable.rtc_refresh_day){
+                if(hw_getDay() != timetable.rtc_refresh_day){
                     timetable.rtc_done = false;
                 }
             }
