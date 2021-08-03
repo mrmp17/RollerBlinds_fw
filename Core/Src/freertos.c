@@ -68,6 +68,8 @@ extern uint8_t g_SoC; //global battery state of charge variable from hw.c
 extern uint8_t g_status; //global status code (indicates open/close status and errors) from hw.c
 extern bool g_request_rtc_refresh; //global rtc time refresh request flag from hw.c. if rtc refresh ok, esp_task resets this to 0
 
+//todo: set status code throughout operation
+
 // 0: unknown
 // 1: up
 // 2: down
@@ -720,18 +722,17 @@ void esp_task_entry(void const * argument)
 
         //all frames are arrays of bytes (fixed length)
 
-        // COMM1 frame: [bStatus, bBatteryPercent, bBatteryDelta, bOpenHr, bOpenMin, bCloseHr, bCloseMin, bRequestTimeRefresh, bSum] len=9
-        // COMM2 frame: [bOpenHr, bOpenMin, bCloseHr, bCloseMin, bTimeNowHr, bTimeNowMin, bTimeNowSec, bDateNowDate, bDateNowMonth, bDateNowYear, bNewTimes, bSum] len=12
+        // COMM1 frame: [bStatus, bPosition, bBatteryPercent, bBatteryDelta, bOpenHr, bOpenMin, bCloseHr, bCloseMin, bRequestTimeRefresh, bSum] len=9
+        // COMM2 frame: [bOpenHr, bOpenMin, bCloseHr, bCloseMin, bTimeNowHr, bTimeNowMin, bTimeNowSec, bDateNowDate, bDateNowMonth, bDateNowYear, bEnableAuto, bManualPosition, bSum] len=13
 
         //sum is cheksup byte. sum of all previous bytes + 1 (with normal uintt8_t overflow)
         // if time values not available or requested set bytes to 0xFF
-        //if new  open/close times from homeAssistant, set bNewTimes
 
         if(g_esp_comms_active){
             g_esp_data_ok = false;
             uint8_t comm2_data[COMM2_LEN] = {0};
             //main logic comanded
-            hw_espPower(true); //enable esp power
+            //hw_espPower(true); //enable esp power //todo: commented out for testing
             osDelay(100); //wait for esp to wake up and start running
 
             uint8_t comm1[COMM1_LEN] = {g_status, g_SoC, abs((int32_t)hw_getCell2Voltage()-(int32_t)hw_getCell1Voltage()), timetable.open_hr, timetable.open_min, timetable.close_hr, timetable.close_min, g_request_rtc_refresh, 0};

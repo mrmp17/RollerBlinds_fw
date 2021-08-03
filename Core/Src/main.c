@@ -121,12 +121,15 @@ int main(void)
   hw_adcStart(); //start adc
 
   //set initial RTC date. updates from wifi at first run
-  hw_setRtcTime(12, 0, 0);
+  hw_setRtcTime(16, 37, 0);
   hw_setRtcDate(28, 5, 21);
 
 
   //wait to allow debbugging after reset
   HAL_Delay(5000);
+
+  //hw_espPower(true);
+  //while(1);
 
   /* USER CODE END 2 */
 
