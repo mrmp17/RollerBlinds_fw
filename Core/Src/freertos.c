@@ -358,11 +358,14 @@ void main_logic_task_entry(void const * argument)
         hw_blueLed(true);
         //set rtc time from wifi. tries again if failed. sw cant start if this is not ok.
         //bool rtcok = false;
-        bool rtcok = true; //todo: this is set to true to disable rtc time refresh on startup
+        bool rtcok = false; //todo: this is set to true to disable rtc time refresh on startup
         while(!rtcok){
             g_request_rtc_refresh = true; //request rtc refresh
             g_esp_comms_active = true; //start comms with esp
-            while(g_esp_comms_active);
+            bool test = g_esp_comms_active;
+            while(test){
+                test = g_esp_comms_active;
+            }
             if(g_esp_data_ok && !g_request_rtc_refresh){
                 rtcok = true;
             }
@@ -722,7 +725,7 @@ void esp_task_entry(void const * argument)
 
         //all frames are arrays of bytes (fixed length)
 
-        // COMM1 frame: [bStatus, bPosition, bBatteryPercent, bBatteryDelta, bOpenHr, bOpenMin, bCloseHr, bCloseMin, bRequestTimeRefresh, bSum] len=9
+        // COMM1 frame: [bStatus, bPosition, bBatteryPercent, bBatteryDelta, bOpenHr, bOpenMin, bCloseHr, bCloseMin, bRequestTimeRefresh, bSum] len=10
         // COMM2 frame: [bOpenHr, bOpenMin, bCloseHr, bCloseMin, bTimeNowHr, bTimeNowMin, bTimeNowSec, bDateNowDate, bDateNowMonth, bDateNowYear, bEnableAuto, bManualPosition, bSum] len=13
 
         //sum is cheksup byte. sum of all previous bytes + 1 (with normal uintt8_t overflow)
@@ -732,33 +735,33 @@ void esp_task_entry(void const * argument)
             g_esp_data_ok = false;
             uint8_t comm2_data[COMM2_LEN] = {0};
             //main logic comanded
-            //hw_espPower(true); //enable esp power //todo: commented out for testing
-            osDelay(100); //wait for esp to wake up and start running
+            hw_espPower(true); //enable esp power //todo: commented out for testing
+            osDelay(10000); //wait for esp to wake up and start running
 
-            uint8_t comm1[COMM1_LEN] = {g_status, g_SoC, abs((int32_t)hw_getCell2Voltage()-(int32_t)hw_getCell1Voltage()), timetable.open_hr, timetable.open_min, timetable.close_hr, timetable.close_min, g_request_rtc_refresh, 0};
+            uint8_t comm1[COMM1_LEN] = {g_status, tmc_getPositionPercent(), g_SoC, abs((int32_t)hw_getCell2Voltage()-(int32_t)hw_getCell1Voltage()), timetable.open_hr, timetable.open_min, timetable.close_hr, timetable.close_min, g_request_rtc_refresh, 0};
             uint8_t checksum = 0;
             for(uint8_t n = 0 ; n<COMM1_LEN ; n++){ //calculate checksum
                 checksum += comm1[n];
             }
+            checksum += 1;
             comm1[COMM1_LEN-1] = checksum;
             HAL_UART_Transmit(&hlpuart1, comm1, COMM1_LEN, 100); //transmit first frame
             for(uint8_t i = 0 ; i<COMM2_LEN ; i++){ //clear array for new data
                 comm2_data[i] = 0;
             }
-            if(HAL_UART_Receive(&hlpuart1, comm2_data, COMM2_LEN, ESP_DATARECV_TIMEOUT) == HAL_OK){ //wait for data received
+            HAL_StatusTypeDef recvStat = HAL_UART_Receive(&hlpuart1, comm2_data, COMM2_LEN, ESP_DATARECV_TIMEOUT);
+            if(recvStat == HAL_OK){ //wait for data received
                 //received data before timeout.
                 //data is now transfered to array and can pe read by main logic (which checks for validity)
                 hw_espPower(false); //turn power off
-                g_esp_comms_active = false;
+                //g_esp_comms_active = false; //todo: correct placement of this??
                 //transfer data to timetable structure
                 if(comm2_valid(comm2_data)){
                     //transfer timetable data
-                    if(comm2_getData(comm2_data, COMM2_NEW_TIMES) == 1){
-                        timetable.open_hr = comm2_getData(comm2_data, COMM2_OPEN_HR);
-                        timetable.open_min = comm2_getData(comm2_data, COMM2_OPEN_MIN);
-                        timetable.close_hr = comm2_getData(comm2_data, COMM2_CLOSE_HR);
-                        timetable.close_min = comm2_getData(comm2_data, COMM2_CLOSE_MIN);
-                    }
+                    timetable.open_hr = comm2_getData(comm2_data, COMM2_OPEN_HR);
+                    timetable.open_min = comm2_getData(comm2_data, COMM2_OPEN_MIN);
+                    timetable.close_hr = comm2_getData(comm2_data, COMM2_CLOSE_HR);
+                    timetable.close_min = comm2_getData(comm2_data, COMM2_CLOSE_MIN);
                     g_esp_data_ok = true;
                     if(comm2_RtcRefreshIncluded(comm2_data)){
                         hw_setRtcFromComm2(comm2_data);
@@ -769,8 +772,9 @@ void esp_task_entry(void const * argument)
             else{
                 //data was not received, end communication
                 hw_espPower(false); //turn power off
-                g_esp_comms_active = false;
+                //g_esp_comms_active = false;
             }
+            g_esp_comms_active = false;
         }
     }
   /* USER CODE END esp_task_entry */

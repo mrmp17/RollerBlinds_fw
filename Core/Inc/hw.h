@@ -101,6 +101,9 @@ bool tmc_commandVelocity(int32_t stpPerSec);
 bool tmc_commandPosition(int32_t position);
 bool tmc_posCtrlActive();
 
+void tmc_commandPositionPercent(uint8_t posPercent);
+uint8_t tmc_getPositionPercent();
+
 #define POS_CLOSE_ENOUGH 20 //threshold for detecting closed/open state, compared to fixed up/down position
 #define G_POS_DOWN 2
 #define G_POS_UP 1
@@ -131,8 +134,8 @@ void hw_inhibitSleepReset();
 //#######################################################
 
 //######################### ESP COMMS ###################
-#define COMM1_LEN 9 //see esp comms description in esp task
-#define COMM2_LEN 12 //see esp comms description in esp task
+#define COMM1_LEN 10 //see esp comms description in esp task
+#define COMM2_LEN 13 //see esp comms description in esp task
 
 #define ESP_DATARECV_TIMEOUT 10000
 
@@ -149,7 +152,6 @@ bool comm2_RtcRefreshIncluded(uint8_t *comm2);
 #define COMM2_RTC_REFRESH_DATE 7
 #define COMM2_RTC_REFRESH_MONTH 8
 #define COMM2_RTC_REFRESH_YEAR 9
-#define COMM2_NEW_TIMES 10
 
 uint8_t comm2_getData(uint8_t *comm2, uint8_t dataPos);
 

@@ -455,7 +455,7 @@ void hw_setRtcFromCompileTime(){
 //timeout is implemented internaliy in esp task
 // value 1 means get open close timings
 // value 2 means get open close timings + rtc refresh time
-uint8_t g_esp_comms_active = 0;
+bool g_esp_comms_active = false;
 
 uint8_t g_SoC = 100; //global battery state of charge variable
 uint8_t g_status = 0; //global status code (indicates open/close status and errors)
@@ -516,6 +516,14 @@ uint8_t hw_getSoc(){
         soc = (uint8_t)((hw_getPackVoltage()-6000.0)*(100.0/(8400.0-6000.0))); //linear approximation soc. not very accurate. close enough
     }
     return soc;
+}
+
+void tmc_commandPositionPercent(uint8_t posPercent){
+    float pos = ((float)posPercent/100)*((float)g_down_pos-(float)g_up_pos) + (float)g_up_pos;
+    tmc_commandPosition((int32_t)pos);
+}
+uint8_t tmc_getPositionPercent(){
+    return (uint8_t)(((float)abs((g_steps_abs-g_up_pos))/(float)abs(g_down_pos-g_up_pos))*100);
 }
 
 
