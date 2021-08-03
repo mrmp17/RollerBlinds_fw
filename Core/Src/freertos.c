@@ -62,7 +62,7 @@ extern bool g_fully_charged_flag; //global fullu charged flag from hw.c
 extern int32_t g_up_pos; //global up position from hw.c
 extern int32_t g_down_pos; //global down position from hw.c
 
-extern bool g_esp_comms_active; //global esp comms active flag from hw.c
+volatile extern bool g_esp_comms_active; //global esp comms active flag from hw.c
 
 extern uint8_t g_SoC; //global battery state of charge variable from hw.c
 extern uint8_t g_status; //global status code (indicates open/close status and errors) from hw.c
@@ -101,20 +101,10 @@ struct Timetable timetable;
 
 /* USER CODE END Variables */
 osThreadId misc_taskHandle;
-uint32_t defaultTaskBuffer[ 96 ];
-osStaticThreadDef_t defaultTaskControlBlock;
 osThreadId tmc_taskHandle;
-uint32_t uiTaskBuffer[ 96 ];
-osStaticThreadDef_t uiTaskControlBlock;
 osThreadId main_logic_taskHandle;
-uint32_t main_logic_taskBuffer[ 96 ];
-osStaticThreadDef_t main_logic_taskControlBlock;
 osThreadId esp_taskHandle;
-uint32_t esp_taskBuffer[ 96 ];
-osStaticThreadDef_t esp_taskControlBlock;
 osThreadId analog_taskHandle;
-uint32_t analog_taskBuffer[ 96 ];
-osStaticThreadDef_t analog_taskControlBlock;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -173,23 +163,23 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* definition and creation of misc_task */
-  osThreadStaticDef(misc_task, misc_task_entry, osPriorityNormal, 0, 96, defaultTaskBuffer, &defaultTaskControlBlock);
+  osThreadDef(misc_task, misc_task_entry, osPriorityNormal, 0, 64);
   misc_taskHandle = osThreadCreate(osThread(misc_task), NULL);
 
   /* definition and creation of tmc_task */
-  osThreadStaticDef(tmc_task, tmc_task_entry, osPriorityHigh, 0, 96, uiTaskBuffer, &uiTaskControlBlock);
+  osThreadDef(tmc_task, tmc_task_entry, osPriorityHigh, 0, 64);
   tmc_taskHandle = osThreadCreate(osThread(tmc_task), NULL);
 
   /* definition and creation of main_logic_task */
-  osThreadStaticDef(main_logic_task, main_logic_task_entry, osPriorityNormal, 0, 96, main_logic_taskBuffer, &main_logic_taskControlBlock);
+  osThreadDef(main_logic_task, main_logic_task_entry, osPriorityNormal, 0, 128);
   main_logic_taskHandle = osThreadCreate(osThread(main_logic_task), NULL);
 
   /* definition and creation of esp_task */
-  osThreadStaticDef(esp_task, esp_task_entry, osPriorityNormal, 0, 96, esp_taskBuffer, &esp_taskControlBlock);
+  osThreadDef(esp_task, esp_task_entry, osPriorityNormal, 0, 128);
   esp_taskHandle = osThreadCreate(osThread(esp_task), NULL);
 
   /* definition and creation of analog_task */
-  osThreadStaticDef(analog_task, analog_task_entry, osPriorityNormal, 0, 96, analog_taskBuffer, &analog_taskControlBlock);
+  osThreadDef(analog_task, analog_task_entry, osPriorityNormal, 0, 64);
   analog_taskHandle = osThreadCreate(osThread(analog_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -360,11 +350,11 @@ void main_logic_task_entry(void const * argument)
         //bool rtcok = false;
         bool rtcok = false; //todo: this is set to true to disable rtc time refresh on startup
         while(!rtcok){
+            osDelay(100);
             g_request_rtc_refresh = true; //request rtc refresh
             g_esp_comms_active = true; //start comms with esp
-            bool test = g_esp_comms_active;
-            while(test){
-                test = g_esp_comms_active;
+            while(g_esp_comms_active){
+                osDelay(10);
             }
             if(g_esp_data_ok && !g_request_rtc_refresh){
                 rtcok = true;
@@ -749,7 +739,9 @@ void esp_task_entry(void const * argument)
             for(uint8_t i = 0 ; i<COMM2_LEN ; i++){ //clear array for new data
                 comm2_data[i] = 0;
             }
+            vTaskSuspendAll();
             HAL_StatusTypeDef recvStat = HAL_UART_Receive(&hlpuart1, comm2_data, COMM2_LEN, ESP_DATARECV_TIMEOUT);
+            xTaskResumeAll();
             if(recvStat == HAL_OK){ //wait for data received
                 //received data before timeout.
                 //data is now transfered to array and can pe read by main logic (which checks for validity)

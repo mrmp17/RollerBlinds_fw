@@ -455,7 +455,7 @@ void hw_setRtcFromCompileTime(){
 //timeout is implemented internaliy in esp task
 // value 1 means get open close timings
 // value 2 means get open close timings + rtc refresh time
-bool g_esp_comms_active = false;
+volatile bool g_esp_comms_active = false;
 
 uint8_t g_SoC = 100; //global battery state of charge variable
 uint8_t g_status = 0; //global status code (indicates open/close status and errors)
@@ -474,7 +474,7 @@ bool comm2_valid(uint8_t *comm2){
         chksum += comm2[n];
     }
     chksum += 1;
-    if(chksum == comm2[10]){
+    if(chksum == comm2[COMM2_LEN-1]){
         //checksumm is OK
         return true;
     }
