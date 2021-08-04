@@ -342,7 +342,7 @@ void main_logic_task_entry(void const * argument)
         timetable.open_done = false;
         timetable.rtc_refresh_day = 15; //refresh rtc every 15th day of the month
         timetable.rtc_done = false;
-        timetable.timetable_refresh_minute = 30; //refresh timetable every hour at min 30
+        timetable.timetable_refresh_minute = 47; //refresh timetable every hour at min 30
         timetable.timetable_refresh_done = false;
 
 //        //set timetable members to 255 (no valid open/close times)
@@ -793,6 +793,7 @@ void esp_task_entry(void const * argument)
                     timetable.open_min = comm2_getData(comm2_data, COMM2_OPEN_MIN);
                     timetable.close_hr = comm2_getData(comm2_data, COMM2_CLOSE_HR);
                     timetable.close_min = comm2_getData(comm2_data, COMM2_CLOSE_MIN);
+                    dbg_debugPrint("hello");
                     g_esp_data_ok = true;
                     if(comm2_RtcRefreshIncluded(comm2_data)){
                         hw_setRtcFromComm2(comm2_data);
