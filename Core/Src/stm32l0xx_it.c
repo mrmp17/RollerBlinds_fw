@@ -21,8 +21,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32l0xx_it.h"
-#include "FreeRTOS.h"
-#include "task.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
@@ -64,6 +62,8 @@ extern UART_HandleTypeDef hlpuart1;
 extern UART_HandleTypeDef huart2;
 extern RTC_HandleTypeDef hrtc;
 extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim6;
+
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -99,28 +99,6 @@ void HardFault_Handler(void)
     /* USER CODE BEGIN W1_HardFault_IRQn 0 */
     /* USER CODE END W1_HardFault_IRQn 0 */
   }
-}
-
-/**
-  * @brief This function handles System tick timer.
-  */
-void SysTick_Handler(void)
-{
-  /* USER CODE BEGIN SysTick_IRQn 0 */
-
-  /* USER CODE END SysTick_IRQn 0 */
-  HAL_IncTick();
-#if (INCLUDE_xTaskGetSchedulerState == 1 )
-  if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
-  {
-#endif /* INCLUDE_xTaskGetSchedulerState */
-  xPortSysTickHandler();
-#if (INCLUDE_xTaskGetSchedulerState == 1 )
-  }
-#endif /* INCLUDE_xTaskGetSchedulerState */
-  /* USER CODE BEGIN SysTick_IRQn 1 */
-
-  /* USER CODE END SysTick_IRQn 1 */
 }
 
 /******************************************************************************/
@@ -186,6 +164,20 @@ void TIM2_IRQHandler(void)
   /* USER CODE BEGIN TIM2_IRQn 1 */
 
   /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM6 global interrupt and DAC1/DAC2 underrun error interrupts.
+  */
+void TIM6_DAC_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM6_DAC_IRQn 0 */
+
+  /* USER CODE END TIM6_DAC_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim6);
+  /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
+
+  /* USER CODE END TIM6_DAC_IRQn 1 */
 }
 
 /**
