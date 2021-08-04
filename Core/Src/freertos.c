@@ -46,27 +46,27 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-extern int32_t g_vel_act; //actual motor velocity global variable from hw.c file
-extern int32_t g_vel_cmd; //global velocity command variable from hw.c file
+extern volatile int32_t g_vel_act; //actual motor velocity global variable from hw.c file
+extern volatile int32_t g_vel_cmd; //global velocity command variable from hw.c file
 
-extern int32_t g_steps_abs; //global variables for absolute step counter and stepper direction from hw.c file
+extern volatile int32_t g_steps_abs; //global variables for absolute step counter and stepper direction from hw.c file
 
-extern int32_t g_pos_cmd; //global position command variable from hw.c file
-extern bool g_pos_ctrl_active; //global positional controll active flag from hw.c file
+extern volatile int32_t g_pos_cmd; //global position command variable from hw.c file
+extern volatile bool g_pos_ctrl_active; //global positional controll active flag from hw.c file
 
-extern bool g_charging_flag; //global charging flag from hw.c file
-extern bool g_low_battery_flag; //global low batterz flag from hw.c
-extern bool g_balance_active_flag; //global balance active flag from hw.c
-extern bool g_fully_charged_flag; //global fullu charged flag from hw.c
+extern volatile bool g_charging_flag; //global charging flag from hw.c file
+extern volatile bool g_low_battery_flag; //global low batterz flag from hw.c
+extern volatile bool g_balance_active_flag; //global balance active flag from hw.c
+extern volatile bool g_fully_charged_flag; //global fullu charged flag from hw.c
 
-extern int32_t g_up_pos; //global up position from hw.c
-extern int32_t g_down_pos; //global down position from hw.c
+extern volatile int32_t g_up_pos; //global up position from hw.c
+extern volatile int32_t g_down_pos; //global down position from hw.c
 
-volatile extern bool g_esp_comms_active; //global esp comms active flag from hw.c
+extern volatile bool g_esp_comms_active; //global esp comms active flag from hw.c
 
-extern uint8_t g_SoC; //global battery state of charge variable from hw.c
-extern uint8_t g_status; //global status code (indicates open/close status and errors) from hw.c
-extern bool g_request_rtc_refresh; //global rtc time refresh request flag from hw.c. if rtc refresh ok, esp_task resets this to 0
+//extern volatile uint8_t g_SoC; //global battery state of charge variable from hw.c
+extern volatile uint8_t g_status; //global status code (indicates open/close status and errors) from hw.c
+extern volatile bool g_request_rtc_refresh; //global rtc time refresh request flag from hw.c. if rtc refresh ok, esp_task resets this to 0
 
 //todo: set status code throughout operation
 
@@ -122,6 +122,18 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 /* GetIdleTaskMemory prototype (linked to static allocation support) */
 void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize );
 
+/* Hook prototypes */
+void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName);
+
+/* USER CODE BEGIN 4 */
+__weak void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
+{
+   /* Run time stack overflow checking is performed if
+   configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
+   called if a stack overflow is detected. */
+}
+/* USER CODE END 4 */
+
 /* USER CODE BEGIN GET_IDLE_TASK_MEMORY */
 static StaticTask_t xIdleTaskTCBBuffer;
 static StackType_t xIdleStack[configMINIMAL_STACK_SIZE];
@@ -167,7 +179,7 @@ void MX_FREERTOS_Init(void) {
   misc_taskHandle = osThreadCreate(osThread(misc_task), NULL);
 
   /* definition and creation of tmc_task */
-  osThreadDef(tmc_task, tmc_task_entry, osPriorityHigh, 0, 64);
+  osThreadDef(tmc_task, tmc_task_entry, osPriorityNormal, 0, 64);
   tmc_taskHandle = osThreadCreate(osThread(tmc_task), NULL);
 
   /* definition and creation of main_logic_task */
@@ -199,7 +211,9 @@ void misc_task_entry(void const * argument)
 {
   /* USER CODE BEGIN misc_task_entry */
     /* Infinite loop */
-    while(1);
+    while(1){
+        osDelay(100);
+    }
 
   /* USER CODE END misc_task_entry */
 }
@@ -346,15 +360,19 @@ void main_logic_task_entry(void const * argument)
 
         //first thing to do: set rtc from wifi
         hw_blueLed(true);
+        osDelay(1000);
         //set rtc time from wifi. tries again if failed. sw cant start if this is not ok.
         //bool rtcok = false;
+        //vTaskSuspend(tmc_taskHandle);
+        //vTaskSuspend(misc_taskHandle);
+        //vTaskSuspend(analog_taskHandle);
         bool rtcok = false; //todo: this is set to true to disable rtc time refresh on startup
         while(!rtcok){
             osDelay(100);
             g_request_rtc_refresh = true; //request rtc refresh
             g_esp_comms_active = true; //start comms with esp
             while(g_esp_comms_active){
-                osDelay(10);
+                //osDelay(10);
             }
             if(g_esp_data_ok && !g_request_rtc_refresh){
                 rtcok = true;
@@ -583,16 +601,17 @@ void main_logic_task_entry(void const * argument)
 
 
             if(hw_getMinute() == timetable.timetable_refresh_minute && !timetable.timetable_refresh_done){
-                g_request_rtc_refresh = true; //request rtc refresh
+                g_request_rtc_refresh = true; //request timetable refresh
                 g_esp_comms_active = true; //trigger comms
                 timetable.timetable_refresh_done  = true;
             }
 
-            if(hw_getDay() == timetable.rtc_refresh_day && !timetable.rtc_done){
-                g_request_rtc_refresh = false; //not needed here
-                g_esp_comms_active = true; //triger comms
-                timetable.rtc_done = true;
-            }
+            //not needed - rtc is refreshed every timetable refresh
+//            if(hw_getDay() == timetable.rtc_refresh_day && !timetable.rtc_done){
+//                g_request_rtc_refresh = false; //not needed here
+//                g_esp_comms_active = true; //triger comms
+//                timetable.rtc_done = true;
+//            }
 
             //reset timetable refresh done flag
             if(timetable.timetable_refresh_done){
@@ -728,20 +747,40 @@ void esp_task_entry(void const * argument)
             hw_espPower(true); //enable esp power //todo: commented out for testing
             osDelay(10000); //wait for esp to wake up and start running
 
-            uint8_t comm1[COMM1_LEN] = {g_status, tmc_getPositionPercent(), g_SoC, abs((int32_t)hw_getCell2Voltage()-(int32_t)hw_getCell1Voltage()), timetable.open_hr, timetable.open_min, timetable.close_hr, timetable.close_min, g_request_rtc_refresh, 0};
+            uint8_t comm1[COMM1_LEN] = {g_status, tmc_getPositionPercent(), hw_getSoc(), abs((int32_t)hw_getCell2Voltage()-(int32_t)hw_getCell1Voltage()), timetable.open_hr, timetable.open_min, timetable.close_hr, timetable.close_min, g_request_rtc_refresh, 0};
             uint8_t checksum = 0;
             for(uint8_t n = 0 ; n<COMM1_LEN ; n++){ //calculate checksum
                 checksum += comm1[n];
             }
             checksum += 1;
             comm1[COMM1_LEN-1] = checksum;
-            HAL_UART_Transmit(&hlpuart1, comm1, COMM1_LEN, 100); //transmit first frame
+            HAL_GPIO_TogglePin(AUX_GPIO_GPIO_Port, AUX_GPIO_Pin);
+            volatile HAL_StatusTypeDef ok = HAL_UART_Transmit(&hlpuart1, comm1, COMM1_LEN, 100); //transmit first frame
             for(uint8_t i = 0 ; i<COMM2_LEN ; i++){ //clear array for new data
                 comm2_data[i] = 0;
             }
-            vTaskSuspendAll();
-            HAL_StatusTypeDef recvStat = HAL_UART_Receive(&hlpuart1, comm2_data, COMM2_LEN, ESP_DATARECV_TIMEOUT);
-            xTaskResumeAll();
+            //vTaskSuspendAll();
+            //volatile bool gt = __HAL_UART_GET_FLAG(&hlpuart1, UART_FLAG_FE);
+            //gt = __HAL_UART_GET_FLAG(&hlpuart1, UART_FLAG_ORE);
+            //gt = __HAL_UART_GET_FLAG(&hlpuart1, UART_FLAG_PE);
+            //gt = __HAL_UART_GET_FLAG(&hlpuart1, UART_FLAG_ABRE);
+
+            //HAL_UART_Receive_DMA(&hlpuart1, comm2_data, 1);
+            //HAL_GPIO_TogglePin(AUX_GPIO_GPIO_Port, AUX_GPIO_Pin);
+            //while(__HAL_DMA_GET_COUNTER(&hdma_lpuart1_rx) != 0);
+            //volatile bool gt = __HAL_UART_GET_FLAG(&hlpuart1, UART_FLAG_RXNE);
+//            __HAL_UART_CLEAR_FEFLAG(&hlpuart1);
+//            __HAL_UART_CLEAR_OREFLAG(&hlpuart1);
+//            __HAL_UART_CLEAR_PEFLAG(&hlpuart1);
+//            __HAL_UART_CLEAR_NEFLAG(&hlpuart1);
+//            __HAL_UART_CLEAR_FLAG(&hlpuart1, UART_FLAG_RXNE);
+//            __HAL_UART_CLEAR_FLAG(&hlpuart1, UART_FLAG_TC);
+//            __HAL_UART_CLEAR_FLAG(&hlpuart1, UART_FLAG_RXNE);
+            HAL_StatusTypeDef recvStat = HAL_UART_Receive_DMA(&hlpuart1, comm2_data, COMM2_LEN);
+            //HAL_StatusTypeDef recvStat = HAL_UART_Receive(&hlpuart1, comm2_data, COMM2_LEN, ESP_DATARECV_TIMEOUT);
+            //xTaskResumeAll();
+            uint32_t startUartRecv = HAL_GetTick();
+            while(__HAL_DMA_GET_COUNTER(&hdma_lpuart1_rx) != 0 && HAL_GetTick() - startUartRecv < ESP_DATARECV_TIMEOUT);
             if(recvStat == HAL_OK){ //wait for data received
                 //received data before timeout.
                 //data is now transfered to array and can pe read by main logic (which checks for validity)

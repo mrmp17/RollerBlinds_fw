@@ -108,10 +108,10 @@ bool hw_vbusPresent(){
 
 
 uint32_t adcBuffer[ADC_NUM_CH] = {0};
-bool g_charging_flag = false; //value set and reset by analog task
-bool g_low_battery_flag = false; //value set and reset by analog task
-bool g_balance_active_flag = false; //value set by analog task
-bool g_fully_charged_flag = false; //fully charged flag set by analog task
+volatile bool g_charging_flag = false; //value set and reset by analog task
+volatile bool g_low_battery_flag = false; //value set and reset by analog task
+volatile bool g_balance_active_flag = false; //value set by analog task
+volatile bool g_fully_charged_flag = false; //fully charged flag set by analog task
 void hw_adcStart(){
     HAL_ADCEx_Calibration_Start(&hadc, ADC_SINGLE_ENDED);
     HAL_ADC_Start_DMA(&hadc, adcBuffer, ADC_NUM_CH);
@@ -146,7 +146,7 @@ uint32_t hw_getVbusVoltage(){
 }
 
 
-int32_t g_steps_abs = 0; //global variables for absolute step counter and stepper direction
+volatile int32_t g_steps_abs = 0; //global variables for absolute step counter and stepper direction
 bool g_tmc_direction = false;
 
 //set tmc direction
@@ -174,10 +174,10 @@ void tmc_stopStepGen(){
 }
 
 //global roller blids up and down positions. get set at first run manula calibration
-int32_t g_up_pos = 0;
-int32_t g_down_pos = 0;
+volatile int32_t g_up_pos = 0;
+volatile int32_t g_down_pos = 0;
 
-int32_t g_vel_act = 0; //actual motor velocity global variable
+volatile int32_t g_vel_act = 0; //actual motor velocity global variable
 //sets step pulse frequency for correct steps per second - stepper motor velocity
 //returns true if parameter in range (set to nearest possible freq)
 //this is microstepping, not full steps!
@@ -203,7 +203,7 @@ bool tmc_setSpS(uint32_t stpPerSec){
     return ret;
 }
 
-int32_t g_vel_cmd = 0; //global velocity command variable
+volatile int32_t g_vel_cmd = 0; //global velocity command variable
 //sets desired motor velocity in steps per second. Actual motor velocity can be different due to ramping (handeled in rtos task)
 //returns false if set speed too high
 bool tmc_commandVelocity(int32_t stpPerSec){
@@ -213,8 +213,8 @@ bool tmc_commandVelocity(int32_t stpPerSec){
     return true;
 }
 
-int32_t g_pos_cmd = 0; //global position command variable
-bool g_pos_ctrl_active = false; //global positional controll active flag
+volatile int32_t g_pos_cmd = 0; //global position command variable
+volatile bool g_pos_ctrl_active = false; //global positional controll active flag
 //sets commanded motor position (in relation to absolute step counter). returns false if this is not possible
 //also sets g_pos_ctrl_active flag. flag resets when comanded position is reached
 bool tmc_commandPosition(int32_t position){
@@ -266,6 +266,9 @@ void hw_sleep(){
     HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
 
     hw_gpioConfigForAwake();
+    //MX_LPUART1_UART_Init();
+    HAL_UART_MspInit(&hlpuart1);
+
 
     hw_adcStart();
     //hw_espPower(false);
@@ -457,9 +460,9 @@ void hw_setRtcFromCompileTime(){
 // value 2 means get open close timings + rtc refresh time
 volatile bool g_esp_comms_active = false;
 
-uint8_t g_SoC = 100; //global battery state of charge variable
-uint8_t g_status = 0; //global status code (indicates open/close status and errors)
-bool g_request_rtc_refresh = false; //global rtc refresh request flag
+//volatile uint8_t g_SoC = 100; //global battery state of charge variable
+volatile uint8_t g_status = 0; //global status code (indicates open/close status and errors)
+volatile bool g_request_rtc_refresh = false; //global rtc refresh request flag
 
 
 
@@ -483,7 +486,7 @@ bool comm2_valid(uint8_t *comm2){
 
 //checks if rtc refresh data is in com2 frame
 bool comm2_RtcRefreshIncluded(uint8_t *comm2){
-    return (comm2[7] != 255 && comm2[7] != 0); //checks if dateNowDate is not equal to 255 or 0
+    return (comm2[4] != 255); //checks if timeNowHr is not equal to 255
 }
 
 //returns data byte from comm2 frame. check validity before getting data!
