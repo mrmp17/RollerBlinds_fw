@@ -68,6 +68,9 @@ extern volatile bool g_esp_comms_active; //global esp comms active flag from hw.
 extern volatile uint8_t g_status; //global status code (indicates open/close status and errors) from hw.c
 extern volatile bool g_request_rtc_refresh; //global rtc time refresh request flag from hw.c. if rtc refresh ok, esp_task resets this to 0
 
+//set position from slider on home assistant in PERCENT  value 255 indicates no movement needed
+volatile uint8_t force_position_from_wifi = 255;
+
 //todo: set status code throughout operation
 
 // 0: unknown
@@ -88,9 +91,7 @@ struct Timetable{
     uint8_t close_min;
     bool open_done;
     bool close_done;
-    bool rtc_done;
     uint32_t timetable_refresh_timecode;
-    bool timetable_refresh_done;
 };
 struct Timetable timetable;
 
@@ -339,9 +340,7 @@ void main_logic_task_entry(void const * argument)
         timetable.open_hr = 255;
         timetable.open_min = 255;
         timetable.open_done = false;
-        timetable.rtc_done = false;
         timetable.timetable_refresh_timecode = 0; //refresh timetable every hour at min 30
-        timetable.timetable_refresh_done = false;
 
 //        //set timetable members to 255 (no valid open/close times)
 //        timetable.close_hr = 12;
@@ -454,6 +453,8 @@ void main_logic_task_entry(void const * argument)
         }
         hw_tmcIoSply(false);
         hw_tmcPower(false);
+        //set next timetable refresh time
+        timetable.timetable_refresh_timecode = hw_getTimecode(hw_getYear(), hw_getMonth(), hw_getDay(), hw_getHour(), hw_getMinute(), hw_getSecond()) + TIMETABLE_REFRESH_PERIOD_SEC;
         dbg_debugPrint("calib ok\n");
         // ########## END OF STARTUP MANUAL POSITION CALIBRATION
 
@@ -547,7 +548,7 @@ void main_logic_task_entry(void const * argument)
             //refresh timetable if middle button pressed
             else if(hw_sw2()){
                 g_esp_comms_active = true; //trigger comms
-                timetable.timetable_refresh_done  = true;
+                timetable.timetable_refresh_timecode = hw_getTimecode(hw_getYear(), hw_getMonth(), hw_getDay(), hw_getHour(), hw_getMinute(), hw_getSecond()) + TIMETABLE_REFRESH_PERIOD_SEC;
             }
 
             //automatic RTC opening, closing
@@ -592,6 +593,26 @@ void main_logic_task_entry(void const * argument)
                 timetable.close_done = true;
             }
 
+            //forced position from home assistant
+            if(force_position_from_wifi <= 100){
+                dbg_debugPrint("auto prcnt\n");
+                hw_tmcPower(true);
+                hw_tmcIoSply(true);
+                osDelay(100);
+                tmc_commandPositionPercent(force_position_from_wifi);
+                while (tmc_posCtrlActive()){
+                    if(hw_sw3()){
+                        tmc_commandPosition(g_down_pos);
+                    }
+                    else if(hw_sw1()){
+                        tmc_commandPosition(g_up_pos);
+                    }
+                }
+                force_position_from_wifi = 255;
+                hw_tmcPower(false);
+                hw_tmcIoSply(false);
+            }
+
             //reset close_done flag
             if(timetable.close_done){
                 if(hw_getMinute() != timetable.close_min){
@@ -606,10 +627,10 @@ void main_logic_task_entry(void const * argument)
             }
 
 
-            if(hw_getMinute() == timetable.timetable_refresh_minute && !timetable.timetable_refresh_done){
+            if(hw_getTimecode(hw_getYear(), hw_getMonth(), hw_getDay(), hw_getHour(), hw_getMinute(), hw_getSecond()) > timetable.timetable_refresh_timecode){
                 g_request_rtc_refresh = true; //request rtc refresh
                 g_esp_comms_active = true; //trigger comms
-                timetable.timetable_refresh_done  = true;
+                timetable.timetable_refresh_timecode += TIMETABLE_REFRESH_PERIOD_SEC;
             }
 
             //not needed - rtc is refreshed every timetable refresh
@@ -619,18 +640,7 @@ void main_logic_task_entry(void const * argument)
 //                timetable.rtc_done = true;
 //            }
 
-            //reset timetable refresh done flag
-            if(timetable.timetable_refresh_done){
-                if(hw_getMinute() != timetable.timetable_refresh_minute){
-                    timetable.timetable_refresh_done = false;
-                }
-            }
-            //reset rtc refresh done flag
-            if(timetable.rtc_done){
-                if(hw_getDay() != timetable.rtc_refresh_day){
-                    timetable.rtc_done = false;
-                }
-            }
+
 
             //request sleep inhibit if esp comms active
             if(g_esp_comms_active){
@@ -737,7 +747,6 @@ void esp_task_entry(void const * argument)
         // - STM shuts off power to ESP
 
         // STM implements timeouts on communication
-        volatile uint32_t tm = hw_getTimecode(2020, 12, 3, 2, 4);
         //all frames are arrays of bytes (fixed length)
 
         // COMM1 frame: [bStatus, bPosition, bBatteryPercent, bBatteryDelta, bOpenHr, bOpenMin, bCloseHr, bCloseMin, bRequestTimeRefresh, bSum] len=10

@@ -207,7 +207,7 @@ volatile int32_t g_vel_cmd = 0; //global velocity command variable
 //sets desired motor velocity in steps per second. Actual motor velocity can be different due to ramping (handeled in rtos task)
 //returns false if set speed too high
 bool tmc_commandVelocity(int32_t stpPerSec){
-    if(abs(stpPerSec) > TMC_MAX_VEL) return false;
+    if((stpPerSec) > TMC_MAX_VEL) return false;
 
     g_vel_cmd = stpPerSec; //write comanded velocity to global variable
     return true;
@@ -532,9 +532,9 @@ uint8_t tmc_getPositionPercent(){
     return (uint8_t)(((float)abs((g_steps_abs-g_up_pos))/(float)abs(g_down_pos-g_up_pos))*100);
 }
 
-uint32_t hw_getTimecode(uint32_t yr, uint8_t mnt, uint8_t day, uint8_t hr, uint8_t sec){
+uint32_t hw_getTimecode(uint32_t yr, uint8_t mnt, uint8_t day, uint8_t hr, uint8_t min, uint8_t sec){
     //warning: this is not true unix epoch time
-    return (yr-1970)*1314000 + mnt*108000 + day*86400 + hr*3600 + sec;
+    return (yr-1970)*1314000 + mnt*108000 + day*86400 + hr*3600 + min*60 + sec;
 }
 
 
@@ -543,6 +543,7 @@ uint32_t hw_getTimecode(uint32_t yr, uint8_t mnt, uint8_t day, uint8_t hr, uint8
 
 
 void dbg_debugPrint(uint8_t print[32]){
+    //return;
     uint8_t n = 0;
     while(print[n] != 0){
         n++;

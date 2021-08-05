@@ -113,6 +113,7 @@ uint8_t tmc_getPositionPercent();
 // ########## SLEEP AND RTC FUNCTIONS ###################
 #define RTC_WAKE_TIME 5000
 #define RTC_TICKS_PER_S 2048
+#define TIMETABLE_REFRESH_PERIOD_SEC 900
 void hw_sleep();
 void hw_configClockAfterSleep();
 void hw_setRtcTime(uint8_t h, uint8_t m, uint8_t s);
@@ -128,7 +129,7 @@ bool hw_gpioConfigForAwake();
 void hw_setRtcFromCompileTime();
 void hw_inhibitSleep(bool state);
 void hw_inhibitSleepReset();
-uint32_t hw_getTimecode(uint32_t yr, uint8_t mnt, uint8_t day, uint8_t hr, uint8_t sec);
+uint32_t hw_getTimecode(uint32_t yr, uint8_t mnt, uint8_t day, uint8_t hr, uint8_t min, uint8_t sec);
 
 
 //#######################################################
