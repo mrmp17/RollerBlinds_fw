@@ -593,7 +593,7 @@ void main_logic_task_entry(void const * argument)
                 timetable.close_done = true;
             }
 
-            //forced position from home assistant
+            //manual position from home assistant
             if(force_position_from_wifi <= 100){
                 dbg_debugPrint("auto prcnt\n");
                 hw_tmcPower(true);
@@ -738,7 +738,7 @@ void esp_task_entry(void const * argument)
     /* Infinite loop */
     for (;;) {
         osDelay(1);
-
+        static uint8_t slider_pos_prev = 255; //255 only at boot
         // communication with ESP8266 module:
         // - STM turns on ESP power
         // - STM sends status(error, battery) and clock refresh request to ESP (frame COMM1)
@@ -809,12 +809,32 @@ void esp_task_entry(void const * argument)
                 //transfer data to timetable structure
                 if(comm2_valid(comm2_data)){
                     //transfer timetable data
-                    timetable.open_hr = comm2_getData(comm2_data, COMM2_OPEN_HR);
-                    timetable.open_min = comm2_getData(comm2_data, COMM2_OPEN_MIN);
-                    timetable.close_hr = comm2_getData(comm2_data, COMM2_CLOSE_HR);
-                    timetable.close_min = comm2_getData(comm2_data, COMM2_CLOSE_MIN);
+                    if(comm2_getData(comm2_data, COMM2_ENABLE_AUTO)){
+                        timetable.open_hr = comm2_getData(comm2_data, COMM2_OPEN_HR);
+                        timetable.open_min = comm2_getData(comm2_data, COMM2_OPEN_MIN);
+                        timetable.close_hr = comm2_getData(comm2_data, COMM2_CLOSE_HR);
+                        timetable.close_min = comm2_getData(comm2_data, COMM2_CLOSE_MIN);
+                    }
+                    //auto disabled, set to 255 to never auto close/open
+                    else{
+                        timetable.open_hr = 255;
+                        timetable.open_min = 255;
+                        timetable.close_hr = 255;
+                        timetable.close_min = 255;
+                    }
                     dbg_debugPrint("tmtbl rfrsh ok\n");
                     g_esp_data_ok = true;
+
+                    //manual positioning with slider
+                    if(comm2_getData(comm2_data, COMM2_MANUAL_POS) != slider_pos_prev && slider_pos_prev != 255){
+                        force_position_from_wifi = comm2_getData(comm2_data, COMM2_MANUAL_POS);
+                        dbg_debugPrint("man pos writen\n");
+                    }
+                    else{
+                        //force_position_from_wifi = 255;
+                    }
+                    slider_pos_prev = comm2_getData(comm2_data, COMM2_MANUAL_POS);
+
                     if(comm2_RtcRefreshIncluded(comm2_data)){
                         hw_setRtcFromComm2(comm2_data);
                         g_request_rtc_refresh = false; //reset to let main logic know that rtc refresh successfull

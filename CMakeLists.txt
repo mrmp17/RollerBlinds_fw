@@ -46,6 +46,9 @@ else ()
     add_compile_options(-Og -g)
 endif ()
 
+#manually set optimisation for flash size
+add_compile_options(-Os)
+
 include_directories(Core/Inc Drivers/STM32L0xx_HAL_Driver/Inc Drivers/STM32L0xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32L0xx/Include Drivers/CMSIS/Include Middlewares/Third_Party/FreeRTOS/Source/include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM0)
 
 add_definitions(-DUSE_HAL_DRIVER -DSTM32L051xx)

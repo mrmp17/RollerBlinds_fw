@@ -153,6 +153,9 @@ bool comm2_RtcRefreshIncluded(uint8_t *comm2);
 #define COMM2_RTC_REFRESH_DATE 7
 #define COMM2_RTC_REFRESH_MONTH 8
 #define COMM2_RTC_REFRESH_YEAR 9
+#define COMM2_ENABLE_AUTO 10
+#define COMM2_MANUAL_POS 11
+
 
 uint8_t comm2_getData(uint8_t *comm2, uint8_t dataPos);
 
