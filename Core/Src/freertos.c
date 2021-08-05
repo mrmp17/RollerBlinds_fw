@@ -88,9 +88,8 @@ struct Timetable{
     uint8_t close_min;
     bool open_done;
     bool close_done;
-    uint8_t rtc_refresh_day;
     bool rtc_done;
-    uint8_t timetable_refresh_minute;
+    uint32_t timetable_refresh_timecode;
     bool timetable_refresh_done;
 };
 struct Timetable timetable;
@@ -340,9 +339,8 @@ void main_logic_task_entry(void const * argument)
         timetable.open_hr = 255;
         timetable.open_min = 255;
         timetable.open_done = false;
-        timetable.rtc_refresh_day = 15; //refresh rtc every 15th day of the month
         timetable.rtc_done = false;
-        timetable.timetable_refresh_minute = 255; //refresh timetable every hour at min 30
+        timetable.timetable_refresh_timecode = 0; //refresh timetable every hour at min 30
         timetable.timetable_refresh_done = false;
 
 //        //set timetable members to 255 (no valid open/close times)
@@ -655,60 +653,60 @@ void main_logic_task_entry(void const * argument)
         }
 
         //testing control logic
-        while(true){
-            //automatic RTC closing
-            if (1 && hw_getHour() == 21 && hw_getMinute() == 30 && hw_getSecond() < 20) {
-                //closing time
-                hw_tmcPower(true);
-                hw_tmcIoSply(true);
-                hw_redLed(true);
-                tmc_commandPosition(g_down_pos);
-                while (tmc_posCtrlActive());
-            }
-
-                //automatic RTC opening
-            else if (1 && hw_getHour() == 9 && hw_getMinute() == 5 && hw_getSecond() < 20) {
-                //opening time
-                hw_tmcPower(true);
-                hw_tmcIoSply(true);
-                hw_redLed(true);
-                tmc_commandPosition(g_up_pos);
-                while (tmc_posCtrlActive());
-            }
-            else if (hw_sw1()) {
-                //gor
-                hw_tmcPower(true);
-                hw_tmcIoSply(true);
-                hw_redLed(true);
-                tmc_commandPosition(g_up_pos);
-                while (tmc_posCtrlActive());
-
-            }
-            else if (hw_sw2()) {
-            }
-            else if (hw_sw3()) {
-                //dol
-                hw_tmcPower(true);
-                hw_tmcIoSply(true);
-                hw_redLed(true);
-                tmc_commandPosition(g_down_pos);
-                while (tmc_posCtrlActive());
-
-            } else {
-
-            }
-
-            if (g_charging_flag) {
-                hw_blueLed(true);
-            } else {
-                hw_blueLed(false);
-                hw_redLed(false);
-                //osDelay(5000);
-                hw_sleep();
-                //hw_redLed(true);
-
-            }
-        }
+//        while(true){
+//            //automatic RTC closing
+//            if (1 && hw_getHour() == 21 && hw_getMinute() == 30 && hw_getSecond() < 20) {
+//                //closing time
+//                hw_tmcPower(true);
+//                hw_tmcIoSply(true);
+//                hw_redLed(true);
+//                tmc_commandPosition(g_down_pos);
+//                while (tmc_posCtrlActive());
+//            }
+//
+//                //automatic RTC opening
+//            else if (1 && hw_getHour() == 9 && hw_getMinute() == 5 && hw_getSecond() < 20) {
+//                //opening time
+//                hw_tmcPower(true);
+//                hw_tmcIoSply(true);
+//                hw_redLed(true);
+//                tmc_commandPosition(g_up_pos);
+//                while (tmc_posCtrlActive());
+//            }
+//            else if (hw_sw1()) {
+//                //gor
+//                hw_tmcPower(true);
+//                hw_tmcIoSply(true);
+//                hw_redLed(true);
+//                tmc_commandPosition(g_up_pos);
+//                while (tmc_posCtrlActive());
+//
+//            }
+//            else if (hw_sw2()) {
+//            }
+//            else if (hw_sw3()) {
+//                //dol
+//                hw_tmcPower(true);
+//                hw_tmcIoSply(true);
+//                hw_redLed(true);
+//                tmc_commandPosition(g_down_pos);
+//                while (tmc_posCtrlActive());
+//
+//            } else {
+//
+//            }
+//
+//            if (g_charging_flag) {
+//                hw_blueLed(true);
+//            } else {
+//                hw_blueLed(false);
+//                hw_redLed(false);
+//                //osDelay(5000);
+//                hw_sleep();
+//                //hw_redLed(true);
+//
+//            }
+//        }
 
 
 
