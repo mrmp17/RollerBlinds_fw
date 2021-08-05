@@ -761,7 +761,7 @@ void esp_task_entry(void const * argument)
             uint8_t comm2_data[COMM2_LEN] = {0};
             //main logic comanded
             hw_espPower(true); //enable esp power //todo: commented out for testing
-            osDelay(10000); //wait for esp to wake up and start running
+            osDelay(100); //wait for esp to wake up and start running
 
             //purge uart receiver
             uint8_t shitdata[3];
