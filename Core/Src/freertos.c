@@ -342,7 +342,7 @@ void main_logic_task_entry(void const * argument)
         timetable.open_done = false;
         timetable.rtc_refresh_day = 15; //refresh rtc every 15th day of the month
         timetable.rtc_done = false;
-        timetable.timetable_refresh_minute = 47; //refresh timetable every hour at min 30
+        timetable.timetable_refresh_minute = 255; //refresh timetable every hour at min 30
         timetable.timetable_refresh_done = false;
 
 //        //set timetable members to 255 (no valid open/close times)
@@ -456,7 +456,7 @@ void main_logic_task_entry(void const * argument)
         }
         hw_tmcIoSply(false);
         hw_tmcPower(false);
-
+        dbg_debugPrint("calib ok\n");
         // ########## END OF STARTUP MANUAL POSITION CALIBRATION
 
         //plan for main logic:
@@ -546,10 +546,17 @@ void main_logic_task_entry(void const * argument)
                 hw_tmcIoSply(false);
             }
 
+            //refresh timetable if middle button pressed
+            else if(hw_sw2()){
+                g_esp_comms_active = true; //trigger comms
+                timetable.timetable_refresh_done  = true;
+            }
+
             //automatic RTC opening, closing
 
             //open
             if(hw_getHour() == timetable.open_hr && hw_getMinute() == timetable.open_min && !timetable.open_done && g_blinds_position != G_POS_UP){
+                dbg_debugPrint("auto up\n");
                 hw_tmcPower(true);
                 hw_tmcIoSply(true);
                 osDelay(100);
@@ -569,6 +576,7 @@ void main_logic_task_entry(void const * argument)
 
             //close
             if(hw_getHour() == timetable.close_hr && hw_getMinute() == timetable.close_min && !timetable.close_done && g_blinds_position != G_POS_DOWN){
+                dbg_debugPrint("auto dn\n");
                 hw_tmcPower(true);
                 hw_tmcIoSply(true);
                 osDelay(100);
@@ -601,7 +609,7 @@ void main_logic_task_entry(void const * argument)
 
 
             if(hw_getMinute() == timetable.timetable_refresh_minute && !timetable.timetable_refresh_done){
-                g_request_rtc_refresh = true; //request timetable refresh
+                g_request_rtc_refresh = true; //request rtc refresh
                 g_esp_comms_active = true; //trigger comms
                 timetable.timetable_refresh_done  = true;
             }
@@ -731,7 +739,7 @@ void esp_task_entry(void const * argument)
         // - STM shuts off power to ESP
 
         // STM implements timeouts on communication
-
+        volatile uint32_t tm = hw_getTimecode(2020, 12, 3, 2, 4);
         //all frames are arrays of bytes (fixed length)
 
         // COMM1 frame: [bStatus, bPosition, bBatteryPercent, bBatteryDelta, bOpenHr, bOpenMin, bCloseHr, bCloseMin, bRequestTimeRefresh, bSum] len=10
@@ -741,11 +749,16 @@ void esp_task_entry(void const * argument)
         // if time values not available or requested set bytes to 0xFF
 
         if(g_esp_comms_active){
+            dbg_debugPrint("tmtbl rfrsh strt\n");
             g_esp_data_ok = false;
             uint8_t comm2_data[COMM2_LEN] = {0};
             //main logic comanded
             hw_espPower(true); //enable esp power //todo: commented out for testing
             osDelay(10000); //wait for esp to wake up and start running
+
+            //purge uart receiver
+            uint8_t shitdata[3];
+            HAL_UART_Receive(&hlpuart1, shitdata, 3, 100);
 
             uint8_t comm1[COMM1_LEN] = {g_status, tmc_getPositionPercent(), hw_getSoc(), abs((int32_t)hw_getCell2Voltage()-(int32_t)hw_getCell1Voltage()), timetable.open_hr, timetable.open_min, timetable.close_hr, timetable.close_min, g_request_rtc_refresh, 0};
             uint8_t checksum = 0;
@@ -754,7 +767,7 @@ void esp_task_entry(void const * argument)
             }
             checksum += 1;
             comm1[COMM1_LEN-1] = checksum;
-            HAL_GPIO_TogglePin(AUX_GPIO_GPIO_Port, AUX_GPIO_Pin);
+            //HAL_GPIO_TogglePin(AUX_GPIO_GPIO_Port, AUX_GPIO_Pin);
             volatile HAL_StatusTypeDef ok = HAL_UART_Transmit(&hlpuart1, comm1, COMM1_LEN, 100); //transmit first frame
             for(uint8_t i = 0 ; i<COMM2_LEN ; i++){ //clear array for new data
                 comm2_data[i] = 0;
@@ -793,15 +806,20 @@ void esp_task_entry(void const * argument)
                     timetable.open_min = comm2_getData(comm2_data, COMM2_OPEN_MIN);
                     timetable.close_hr = comm2_getData(comm2_data, COMM2_CLOSE_HR);
                     timetable.close_min = comm2_getData(comm2_data, COMM2_CLOSE_MIN);
-                    dbg_debugPrint("hello");
+                    dbg_debugPrint("tmtbl rfrsh ok\n");
                     g_esp_data_ok = true;
                     if(comm2_RtcRefreshIncluded(comm2_data)){
                         hw_setRtcFromComm2(comm2_data);
                         g_request_rtc_refresh = false; //reset to let main logic know that rtc refresh successfull
+                        dbg_debugPrint("rtc rfrsh ok\n");
                     }
+                }
+                else{
+                    dbg_debugPrint("crpted\n");
                 }
             }
             else{
+                dbg_debugPrint("tmout\n");
                 //data was not received, end communication
                 hw_espPower(false); //turn power off
                 //g_esp_comms_active = false;

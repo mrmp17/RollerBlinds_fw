@@ -268,6 +268,9 @@ void hw_sleep(){
     hw_gpioConfigForAwake();
     //MX_LPUART1_UART_Init();
     HAL_UART_MspInit(&hlpuart1);
+    //MX_LPUART1_UART_Init();
+    //uint8_t shitdata[3];
+    //HAL_UART_Receive(&hlpuart1, shitdata, 3, 100);
 
 
     hw_adcStart();
@@ -529,12 +532,17 @@ uint8_t tmc_getPositionPercent(){
     return (uint8_t)(((float)abs((g_steps_abs-g_up_pos))/(float)abs(g_down_pos-g_up_pos))*100);
 }
 
+uint32_t hw_getTimecode(uint32_t yr, uint8_t mnt, uint8_t day, uint8_t hr, uint8_t sec){
+    //warning: this is not true unix epoch time
+    return (yr-1970)*1314000 + mnt*108000 + day*86400 + hr*3600 + sec;
+}
 
 
 
 
 
-void dbg_debugPrint(uint8_t print[64]){
+
+void dbg_debugPrint(uint8_t print[32]){
     uint8_t n = 0;
     while(print[n] != 0){
         n++;

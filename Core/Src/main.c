@@ -121,12 +121,14 @@ int main(void)
   hw_adcStart(); //start adc
 
   //flush lpuart (esp comms) to prevent getting 0x00 at firtst receive call
-  uint8_t shitdata[3];
-  HAL_UART_Receive(&hlpuart1, shitdata, 3, 100);
+  //uint8_t shitdata[3];
+  //HAL_UART_Receive(&hlpuart1, shitdata, 3, 100);
 
   //set initial RTC date. updates from wifi at first run
   hw_setRtcTime(16, 37, 0);
   hw_setRtcDate(28, 5, 21);
+
+  dbg_debugPrint("boot\n");
 
 
   //wait to allow debbugging after reset

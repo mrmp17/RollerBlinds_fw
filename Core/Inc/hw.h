@@ -27,7 +27,6 @@
 
 
 
-
 //############ LOW LEVEL GPIO MANIPULATION FUNCTIONS ##########
 //output functions
 void hw_redLed(bool state);
@@ -129,6 +128,7 @@ bool hw_gpioConfigForAwake();
 void hw_setRtcFromCompileTime();
 void hw_inhibitSleep(bool state);
 void hw_inhibitSleepReset();
+uint32_t hw_getTimecode(uint32_t yr, uint8_t mnt, uint8_t day, uint8_t hr, uint8_t sec);
 
 
 //#######################################################
@@ -163,7 +163,7 @@ void hw_setRtcFromComm2(uint8_t *comm2);
 //#######################################################
 
 //################## DEBUG ##############################
-void dbg_debugPrint(uint8_t print [64]);
+void dbg_debugPrint(uint8_t print [32]);
 //#######################################################
 
 
