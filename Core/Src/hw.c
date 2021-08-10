@@ -200,6 +200,12 @@ bool tmc_setSpS(uint32_t stpPerSec){
         ret = false;
     }
     __HAL_TIM_SET_AUTORELOAD(&htim2, rld);
+
+    //prevent glitching (if couter is above new autoreload)
+    if(__HAL_TIM_GET_COUNTER(&htim2) > rld){
+        __HAL_TIM_SET_COUNTER(&htim2, 0);
+    }
+    HAL_GPIO_TogglePin(AUX_GPIO_GPIO_Port, AUX_GPIO_Pin); //todo: testing
     return ret;
 }
 

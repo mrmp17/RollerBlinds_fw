@@ -9,6 +9,12 @@
 // "stm" is short for STM32 MACU this code is running on
 // "SpS" is short for stepper steps per second speed
 
+// timer2 for pwm stp generator
+// clk: 16Mhz
+// prescaler: 7 --> 2Mhz --> 0.5uS per couter++
+// couter period up to 65000 (sets frequency) (max period: 32ish ms)
+// pulse: 20 (10uS
+
 #ifndef ROLLERBLINDS_FW_HW_H
 #define ROLLERBLINDS_FW_HW_H
 
@@ -88,9 +94,10 @@ uint8_t hw_getSoc();
 #define STP_TIMER_CLK 2000000L
 #define TMC_MAX_VEL 5000
 #define TMC_MIN_VEL 100
-#define TMC_CRUISE_VEL 3500
-#define TMC_VEL_CHNG_PER_MS 10 //velocity can change 100 stpPerSec every millisecond
-#define TMC_POS_CTRL_RAMP_DOWN_LEN 1000 //speed ramping region in steps for positional controll
+#define TMC_CRUISE_VEL 3700 //matej: 3600, nejc ??
+#define TMC_TASK_DELAY 10
+#define TMC_VEL_CHNG_PER_MS 5 //velocity can change ___ stpPerSec every millisecond
+#define TMC_POS_CTRL_RAMP_DOWN_LEN 2000 //speed ramping region in steps for positional controll
 void tmc_direction(bool dir);
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim);
 void tmc_startStepGen();
@@ -113,7 +120,7 @@ uint8_t tmc_getPositionPercent();
 // ########## SLEEP AND RTC FUNCTIONS ###################
 #define RTC_WAKE_TIME 5000
 #define RTC_TICKS_PER_S 2048
-#define TIMETABLE_REFRESH_PERIOD_SEC 900
+#define TIMETABLE_REFRESH_PERIOD_SEC 600
 void hw_sleep();
 void hw_configClockAfterSleep();
 void hw_setRtcTime(uint8_t h, uint8_t m, uint8_t s);
@@ -138,7 +145,7 @@ uint32_t hw_getTimecode(uint32_t yr, uint8_t mnt, uint8_t day, uint8_t hr, uint8
 #define COMM1_LEN 10 //see esp comms description in esp task
 #define COMM2_LEN 13 //see esp comms description in esp task
 
-#define ESP_DATARECV_TIMEOUT 10000
+#define ESP_DATARECV_TIMEOUT 7500
 
 bool comm2_valid(uint8_t *comm2);
 bool comm2_RtcRefreshIncluded(uint8_t *comm2);

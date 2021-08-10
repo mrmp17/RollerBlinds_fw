@@ -263,7 +263,7 @@ void tmc_task_entry(void const * argument)
             tmc_startStepGen();
             hw_tmcEnable(true);
             if (g_vel_cmd < g_vel_act) {
-                if (g_vel_act - g_vel_cmd <= TMC_VEL_CHNG_PER_MS * 20) { //we can directly jump to commanded speed
+                if (g_vel_act - g_vel_cmd <= TMC_VEL_CHNG_PER_MS * TMC_TASK_DELAY) { //we can directly jump to commanded speed
                     sps_rel = g_vel_cmd;
                     g_vel_act = sps_rel;
                     if (sps_rel >= 0) {
@@ -275,7 +275,7 @@ void tmc_task_entry(void const * argument)
                     }
 
                 } else { //decrease speed max allowable amount
-                    sps_rel = g_vel_act - TMC_VEL_CHNG_PER_MS * 20;
+                    sps_rel = g_vel_act - TMC_VEL_CHNG_PER_MS * TMC_TASK_DELAY;
                     g_vel_act = sps_rel;
                     if (sps_rel >= 0) {
                         tmc_setSpS(sps_rel);
@@ -286,7 +286,7 @@ void tmc_task_entry(void const * argument)
                     }
                 }
             } else if (g_vel_cmd > g_vel_act) {
-                if (g_vel_cmd - g_vel_act <= TMC_VEL_CHNG_PER_MS * 20) { //we can directly jump to commanded speed
+                if (g_vel_cmd - g_vel_act <= TMC_VEL_CHNG_PER_MS * TMC_TASK_DELAY) { //we can directly jump to commanded speed
                     sps_rel = g_vel_cmd;
                     g_vel_act = sps_rel;
                     if (sps_rel >= 0) {
@@ -297,7 +297,7 @@ void tmc_task_entry(void const * argument)
                         tmc_direction(false);
                     }
                 } else { //increase speed max allowable amount
-                    sps_rel = g_vel_act + TMC_VEL_CHNG_PER_MS * 20;
+                    sps_rel = g_vel_act + TMC_VEL_CHNG_PER_MS * TMC_TASK_DELAY;
                     g_vel_act = sps_rel;
                     if (sps_rel >= 0) {
                         tmc_setSpS(sps_rel);
@@ -314,7 +314,7 @@ void tmc_task_entry(void const * argument)
         }
 
         //else: nothing to do, speed is already mached
-        osDelay(20);
+        osDelay(TMC_TASK_DELAY);
     }
   /* USER CODE END tmc_task_entry */
 }
@@ -394,10 +394,10 @@ void main_logic_task_entry(void const * argument)
                     hw_redLed(true);
                     hw_blueLed(false);
                     if(hw_sw1()){
-                        tmc_commandVelocity(TMC_CRUISE_VEL); //jogging up
+                        tmc_commandVelocity(TMC_MAX_VEL); //jogging up
                     }
                     else if(hw_sw3()){
-                        tmc_commandVelocity(-TMC_CRUISE_VEL); //jogging down
+                        tmc_commandVelocity(-TMC_MAX_VEL); //jogging down
                     }
                     else{
                         tmc_commandVelocity(0);
@@ -415,10 +415,10 @@ void main_logic_task_entry(void const * argument)
                     hw_redLed(false);
                     hw_blueLed(true);
                     if(hw_sw1()){
-                        tmc_commandVelocity(TMC_CRUISE_VEL); //jogging up
+                        tmc_commandVelocity(TMC_MAX_VEL); //jogging up
                     }
                     else if(hw_sw3()){
-                        tmc_commandVelocity(-TMC_CRUISE_VEL); //jogging down
+                        tmc_commandVelocity(-TMC_MAX_VEL); //jogging down
                     }
                     else{
                         tmc_commandVelocity(0);
