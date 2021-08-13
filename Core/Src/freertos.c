@@ -548,7 +548,7 @@ void main_logic_task_entry(void const * argument)
             //refresh timetable if middle button pressed
             else if(hw_sw2()){
                 g_esp_comms_active = true; //trigger comms
-                timetable.timetable_refresh_timecode = hw_getTimecode(hw_getYear(), hw_getMonth(), hw_getDay(), hw_getHour(), hw_getMinute(), hw_getSecond()) + TIMETABLE_REFRESH_PERIOD_SEC;
+                timetable.timetable_refresh_timecode = hw_getTimecode() + TIMETABLE_REFRESH_PERIOD_SEC;
             }
 
             //automatic RTC opening, closing
@@ -627,7 +627,7 @@ void main_logic_task_entry(void const * argument)
             }
 
 
-            if(hw_getTimecode(hw_getYear(), hw_getMonth(), hw_getDay(), hw_getHour(), hw_getMinute(), hw_getSecond()) > timetable.timetable_refresh_timecode){
+            if(hw_getTimecode() > timetable.timetable_refresh_timecode){
                 g_request_rtc_refresh = true; //request rtc refresh
                 g_esp_comms_active = true; //trigger comms
                 timetable.timetable_refresh_timecode += TIMETABLE_REFRESH_PERIOD_SEC;

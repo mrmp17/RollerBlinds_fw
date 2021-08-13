@@ -508,7 +508,10 @@ uint8_t comm2_getData(uint8_t *comm2, uint8_t dataPos){
 //sets rtc from bytes from comm2 frame. CHECK VALIDITY OF RTC DATA BEFORE THIS!!
 void hw_setRtcFromComm2(uint8_t *comm2){
     hw_setRtcTime(comm2_getData(comm2, COMM2_RTC_REFRESH_HR), comm2_getData(comm2, COMM2_RTC_REFRESH_MIN), comm2_getData(comm2, COMM2_RTC_REFRESH_SEC));
-    hw_setRtcDate(comm2_getData(comm2, COMM2_RTC_REFRESH_DATE), comm2_getData(comm2, COMM2_RTC_REFRESH_DATE), comm2_getData(comm2, COMM2_RTC_REFRESH_DATE));
+    if(comm2_getData(comm2, COMM2_RTC_REFRESH_DATE) != 0 && comm2_getData(comm2, COMM2_RTC_REFRESH_MONTH) != 0){ //check if data is valid
+        hw_setRtcDate(comm2_getData(comm2, COMM2_RTC_REFRESH_DATE), comm2_getData(comm2, COMM2_RTC_REFRESH_MONTH), comm2_getData(comm2, COMM2_RTC_REFRESH_YEAR));
+    }
+    //date updating is currently not used (ESP sends value 0 for date, month, year) check this code if date needs to be enabled
 }
 
 
@@ -538,9 +541,9 @@ uint8_t tmc_getPositionPercent(){
     return (uint8_t)(((float)abs((g_steps_abs-g_up_pos))/(float)abs(g_down_pos-g_up_pos))*100);
 }
 
-uint32_t hw_getTimecode(uint32_t yr, uint8_t mnt, uint8_t day, uint8_t hr, uint8_t min, uint8_t sec){
+uint32_t hw_getTimecode(){
     //warning: this is not true unix epoch time
-    return (yr-1970)*1314000 + mnt*108000 + day*86400 + hr*3600 + min*60 + sec;
+    return (hw_getYear()-1970)*1314000 + hw_getMonth()*108000 + hw_getDay()*86400 + hw_getHour()*3600 + hw_getMinute()*60 + hw_getSecond();
 }
 
 

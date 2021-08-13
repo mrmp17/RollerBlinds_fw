@@ -136,7 +136,7 @@ bool hw_gpioConfigForAwake();
 void hw_setRtcFromCompileTime();
 void hw_inhibitSleep(bool state);
 void hw_inhibitSleepReset();
-uint32_t hw_getTimecode(uint32_t yr, uint8_t mnt, uint8_t day, uint8_t hr, uint8_t min, uint8_t sec);
+uint32_t hw_getTimecode();
 
 
 //#######################################################
@@ -145,7 +145,7 @@ uint32_t hw_getTimecode(uint32_t yr, uint8_t mnt, uint8_t day, uint8_t hr, uint8
 #define COMM1_LEN 10 //see esp comms description in esp task
 #define COMM2_LEN 13 //see esp comms description in esp task
 
-#define ESP_DATARECV_TIMEOUT 7500
+#define ESP_DATARECV_TIMEOUT 10000
 
 bool comm2_valid(uint8_t *comm2);
 bool comm2_RtcRefreshIncluded(uint8_t *comm2);
