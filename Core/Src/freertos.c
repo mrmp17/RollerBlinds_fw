@@ -551,6 +551,11 @@ void main_logic_task_entry(void const * argument)
                 timetable.timetable_refresh_minute = hw_scheduleMinuteCompare(TIMETABLE_REFRESH_PERIOD_MIN);
             }
 
+            //reset MCU if all three buttons pressed
+            if(hw_sw1() && hw_sw2() && hw_sw3()){
+                HAL_NVIC_SystemReset();
+            }
+
             //automatic RTC opening, closing
 
             //open
@@ -654,6 +659,7 @@ void main_logic_task_entry(void const * argument)
             if(abs(g_steps_abs-g_up_pos)<POS_CLOSE_ENOUGH) g_blinds_position = G_POS_UP;
             else if(abs(g_steps_abs-g_down_pos)<POS_CLOSE_ENOUGH) g_blinds_position = G_POS_DOWN;
             else g_blinds_position = G_POS_UNKNOWN;
+
 
             if(!g_inhibit_sleep){
                 osDelay(10); //allow some time for other tasks
