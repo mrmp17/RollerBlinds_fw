@@ -414,6 +414,10 @@ void main_logic_task_entry(void const * argument)
                     //setting lower position. blue led illuminated
                     hw_redLed(false);
                     hw_blueLed(true);
+                    //reset MCU if all three buttons pressed
+                    if(hw_sw1() && hw_sw2() && hw_sw3()){
+                        HAL_NVIC_SystemReset();
+                    }
                     if(hw_sw1()){
                         tmc_commandVelocity(TMC_MAX_VEL); //jogging up
                     }
@@ -480,16 +484,25 @@ void main_logic_task_entry(void const * argument)
             hw_inhibitSleepReset();
 
             //check if battery is dead
-            bool firstBatDead = true;
+            uint32_t batDeadSlpCounter = 0;
             while(hw_getSoc() == 0){
-                g_status = STATUS_BAT_DEAD;
-                if(firstBatDead){ //send status to esp once when enetering low bat
+                //g_status = STATUS_BAT_DEAD;
+                if(batDeadSlpCounter == 0){ //send status to esp once when enetering low bat
                     g_request_rtc_refresh = false;
                     g_esp_comms_active = true;
                     while(g_esp_comms_active);
-                    firstBatDead = false;
                 }
+                if(batDeadSlpCounter%20 == 0){
+                    osDelay(100); //allow sime time for other stuff to happen once in a while
+                }
+                batDeadSlpCounter++;
                 hw_sleep();
+
+
+                //reset MCU if all three buttons pressed
+                if(hw_sw1() && hw_sw2() && hw_sw3()){
+                    HAL_NVIC_SystemReset();
+                }
             }
 
             //check if charging. inhibit sleep and enable leds if it is

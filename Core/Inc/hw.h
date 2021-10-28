@@ -94,7 +94,7 @@ uint8_t hw_getSoc();
 #define STP_TIMER_CLK 2000000L
 #define TMC_MAX_VEL 5000
 #define TMC_MIN_VEL 100
-#define TMC_CRUISE_VEL 3700 //matej: 3600, nejc ??
+#define TMC_CRUISE_VEL 3600 //matej: 3600, nejc ??
 #define TMC_TASK_DELAY 10
 #define TMC_VEL_CHNG_PER_MS 5 //velocity can change ___ stpPerSec every millisecond
 #define TMC_POS_CTRL_RAMP_DOWN_LEN 2000 //speed ramping region in steps for positional controll
@@ -120,7 +120,7 @@ uint8_t tmc_getPositionPercent();
 // ########## SLEEP AND RTC FUNCTIONS ###################
 #define RTC_WAKE_TIME 5000
 #define RTC_TICKS_PER_S 2048
-#define TIMETABLE_REFRESH_PERIOD_MIN 6
+#define TIMETABLE_REFRESH_PERIOD_MIN 7
 void hw_sleep();
 void hw_configClockAfterSleep();
 void hw_setRtcTime(uint8_t h, uint8_t m, uint8_t s);
