@@ -541,14 +541,19 @@ uint8_t tmc_getPositionPercent(){
     return (uint8_t)(((float)abs((g_steps_abs-g_up_pos))/(float)abs(g_down_pos-g_up_pos))*100);
 }
 
-uint32_t hw_getTimecode(){
-    //warning: this is not true unix epoch time
-    return (hw_getYear()-1970)*1314000 + hw_getMonth()*108000 + hw_getDay()*86400 + hw_getHour()*3600 + hw_getMinute()*60 + hw_getSecond();
+//reads current minute and adds wait_minutes. handles rollover. capps wait_minutes at 59 max
+// MAX wait_minutes = 59
+uint8_t hw_scheduleMinuteCompare(uint8_t wait_minutes){
+    if(wait_minutes > 59){
+        wait_minutes = 59;
+    }
+    if(hw_getMinute()+wait_minutes < 60){ //wait_minutes fits into current hour
+        return hw_getMinute()+wait_minutes;
+    }
+    else{ //hour will roll over before wait_minuts elapses, handle rollover
+        return wait_minutes - (60-hw_getMinute());
+    }
 }
-
-
-
-
 
 
 void dbg_debugPrint(uint8_t print[32]){

@@ -91,7 +91,7 @@ struct Timetable{
     uint8_t close_min;
     bool open_done;
     bool close_done;
-    uint32_t timetable_refresh_timecode;
+    uint8_t timetable_refresh_minute;
 };
 struct Timetable timetable;
 
@@ -340,7 +340,7 @@ void main_logic_task_entry(void const * argument)
         timetable.open_hr = 255;
         timetable.open_min = 255;
         timetable.open_done = false;
-        timetable.timetable_refresh_timecode = 0; //refresh timetable every hour at min 30
+        timetable.timetable_refresh_minute = 0;
 
 //        //set timetable members to 255 (no valid open/close times)
 //        timetable.close_hr = 12;
@@ -454,7 +454,7 @@ void main_logic_task_entry(void const * argument)
         hw_tmcIoSply(false);
         hw_tmcPower(false);
         //set next timetable refresh time
-        timetable.timetable_refresh_timecode = hw_getTimecode(hw_getYear(), hw_getMonth(), hw_getDay(), hw_getHour(), hw_getMinute(), hw_getSecond()) + TIMETABLE_REFRESH_PERIOD_SEC;
+        timetable.timetable_refresh_minute = hw_scheduleMinuteCompare(TIMETABLE_REFRESH_PERIOD_MIN);
         dbg_debugPrint("calib ok\n");
         // ########## END OF STARTUP MANUAL POSITION CALIBRATION
 
@@ -548,7 +548,7 @@ void main_logic_task_entry(void const * argument)
             //refresh timetable if middle button pressed
             else if(hw_sw2()){
                 g_esp_comms_active = true; //trigger comms
-                timetable.timetable_refresh_timecode = hw_getTimecode() + TIMETABLE_REFRESH_PERIOD_SEC;
+                timetable.timetable_refresh_minute = hw_scheduleMinuteCompare(TIMETABLE_REFRESH_PERIOD_MIN);
             }
 
             //automatic RTC opening, closing
@@ -627,10 +627,10 @@ void main_logic_task_entry(void const * argument)
             }
 
 
-            if(hw_getTimecode() > timetable.timetable_refresh_timecode){
+            if(hw_getMinute() == timetable.timetable_refresh_minute){
                 g_request_rtc_refresh = true; //request rtc refresh
                 g_esp_comms_active = true; //trigger comms
-                timetable.timetable_refresh_timecode += TIMETABLE_REFRESH_PERIOD_SEC;
+                timetable.timetable_refresh_minute = hw_scheduleMinuteCompare(TIMETABLE_REFRESH_PERIOD_MIN);
             }
 
             //not needed - rtc is refreshed every timetable refresh
